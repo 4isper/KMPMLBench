@@ -10,10 +10,11 @@ import kotlin.test.assertTrue
 
 class EngineCatalogTest {
     @Test
-    fun superResolutionReturnsMockEngine() {
+    fun superResolutionReturnsAtLeastTheMockEngine() {
         val engines = EngineCatalog.enginesFor(SuperResolutionTask(2, 8, 8))
-        assertEquals(1, engines.size)
-        assertEquals("mock-sr", engines[0].id)
+        assertTrue(engines.isNotEmpty())
+        // The mock is always registered; real engines may be offered too (e.g. ONNX on Desktop).
+        assertTrue(engines.any { it.id == "mock-sr" })
     }
 
     @Test
