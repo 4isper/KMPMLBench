@@ -28,8 +28,8 @@ While the project started with **Super-Resolution**, it is designed to be modula
 ## 🏗️ Architecture
 The benchmark module (`shared/src/commonMain/.../benchmark`) follows Clean Architecture and is split into three layers with no framework dependencies leaking across them:
 
-- **`domain`** — entities (`BenchmarkInput`/`Output`/`Metrics`/`Result`), the `MlEngine` and `EngineProvider` ports, the `SuperResolutionTask`, and the `BenchmarkUseCase` contract with its `BenchmarkRunner` implementation plus a pure `Stats` helper (percentiles).
-- **`data`** — adapters that implement the ports: `MockSuperResolutionEngine` (synthetic CPU workload, no native deps) and `EngineCatalog` (resolves engines per task; real engines plug in here).
+- **`domain`** — entities (`BenchmarkInput`/`Output`/`Metrics`/`Result`), the `MlEngine` and `EngineProvider` ports, the `SuperResolutionTask`, the `BenchmarkUseCase` contract with its `BenchmarkRunner` implementation, plus pure helpers: `Stats` (percentiles) and `processing` (synthetic image generation, box downsample, bilinear upsample, PSNR/SSIM — all framework-free and pixel-buffer based).
+- **`data`** — adapters that implement the ports: `MockSuperResolutionEngine` (real lightweight upscale + quality scoring, no native deps) and `EngineCatalog` (resolves engines per task; real engines plug in here).
 - **`presentation`** — `BenchmarkViewModel` (state holder that drives the use case and maps the result to UI models), `BenchmarkUiState`, and the Compose `BenchmarkScreen`.
 
 The UI depends only on abstractions, so each layer is unit-tested independently (see `shared/src/commonTest`).
@@ -52,4 +52,4 @@ We measure more than just speed:
 3. **Throughput:** Inferences per second — *implemented*.
 4. **Memory Peak:** Maximum RAM/VRAM usage (MB) — *planned*.
 5. **Energy Consumption:** (Mobile only) Battery impact during prolonged tasks — *planned*.
-6. **Quality (PSNR/SSIM):** *planned*; left out of the mock engine.
+6. **Quality (PSNR/SSIM):** *implemented* — the mock engine upscales a synthetic image and scores the result against the ground truth.
