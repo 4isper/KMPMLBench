@@ -23,14 +23,20 @@ import java.nio.FloatBuffer
  * upscaled separately with bilinear interpolation, and the three are recombined
  * into the reconstructed RGB frame. Quality is scored against a synthetic
  * ground truth at the model's output resolution.
+ *
+ * The engine can optionally run on the CoreML execution provider (Apple
+ * Neural Engine / GPU) instead of the default CPU provider, so the benchmark UI
+ * can compare the two execution paths on the same model.
  */
 class OnnxSuperResolutionEngine(
     private val task: SuperResolutionTask,
     private val modelResourcePath: String = "models/super-resolution-10.onnx",
     private val scale: Int = 3,
+    private val executionProvider: String = "cpu",
 ) : MlEngine {
-    override val id: String = "onnx-sr"
-    override val displayName: String = "ONNX SR (Sub-Pixel CNN ×$scale)"
+    override val id: String = if (executionProvider == "coreml") "onnx-coreml-sr" else "onnx-sr"
+    override val displayName: String =
+        "ONNX SR (Sub-Pixel CNN ×$scale)" + if (executionProvider == "coreml") " · CoreML" else ""
 
     private val env = OrtEnvironment.getEnvironment()
     private var session: OrtSession? = null
@@ -45,7 +51,9 @@ class OnnxSuperResolutionEngine(
         val bytes = checkNotNull(
             javaClass.classLoader.getResourceAsStream(modelResourcePath),
         ) { "ONNX model resource not found on classpath: $modelResourcePath" }.use { it.readBytes() }
-        session = env.createSession(bytes, OrtSession.SessionOptions())
+        val options = OrtSession.SessionOptions()
+        if (executionProvider == "coreml") options.addCoreML()
+        session = env.createSession(bytes, options)
     }
 
     override fun infer(input: BenchmarkInput): BenchmarkOutput {

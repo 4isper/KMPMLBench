@@ -11,8 +11,8 @@ The ML landscape is fragmented. Developers often struggle to decide which engine
 
 | Engine | Android | iOS | Desktop (JVM/Native) | Acceleration | Status |
 | :--- | :---: | :---: | :---: | :--- | :--- |
-| **ONNX Runtime** | 🖥️ | 📅 | 📅 | CoreML, DirectML, XNNPACK | Desktop (JVM) ready |
-| **TensorFlow Lite** | 📅 | 📅 | 📅 | NNAPI, CoreML, GPU | Planned |
+| **ONNX Runtime** | 🖥️ | 📅 | ✅ | CoreML, DirectML, XNNPACK | Desktop (JVM) ready — *offered with both the default CPU and CoreML execution providers (on macOS) for comparison* |
+| **TensorFlow Lite** | 📅 | 📅 | 📅 | NNAPI, CoreML, GPU | Planned — *no desktop JVM native is published (Android `.aar` only)* |
 | **NCNN** | 📅 | 📅 | 📅 | Vulkan, Metal | Planned |
 | **MNN** | 📅 | 📅 | 📅 | OpenCL, Vulkan, Metal | Planned |
 | **ExecuTorch** | 📅 | 📅 | 📅 | XNNPACK, CoreML | Planned |
@@ -20,7 +20,7 @@ The ML landscape is fragmented. Developers often struggle to decide which engine
 ## 🧠 Benchmarking Tasks
 While the project started with **Super-Resolution**, it is designed to be modular:
 
-- [x] **Super-Resolution:** ESPCN, FSRCNN, Real-ESRGAN — *working harness with a mock engine and a real ONNX Runtime engine (Desktop/JVM, Sub-Pixel CNN ×3)*.
+- [x] **Super-Resolution:** ESPCN, FSRCNN, Real-ESRGAN — *working harness with a mock engine plus two real Desktop/JVM engines for side-by-side comparison: **ONNX Runtime** (Sub-Pixel CNN ×3, `super-resolution-10.onnx`) offered twice — once on the default CPU execution provider and once on the **CoreML** execution provider (Apple Neural Engine / GPU, on macOS) — so the UI can compare engine/latency trade-offs on the same model*.
 - [ ] **Image Classification:** MobileNetV3, EfficientNet (Planned).
 - [ ] **Object Detection:** YOLOv8-Nano (Planned).
 - [ ] **On-device LLM:** Gemma 2B / Phi-2 (Experimental via ExecuTorch).
@@ -29,7 +29,7 @@ While the project started with **Super-Resolution**, it is designed to be modula
 The benchmark module (`shared/src/commonMain/.../benchmark`) follows Clean Architecture and is split into three layers with no framework dependencies leaking across them:
 
 - **`domain`** — entities (`BenchmarkInput`/`Output`/`Metrics`/`Result`), the `MlEngine` and `EngineProvider` ports, the `SuperResolutionTask`, the `BenchmarkUseCase` contract with its `BenchmarkRunner` implementation, plus pure helpers: `Stats` (percentiles) and `processing` (synthetic image generation, box downsample, bilinear upsample, PSNR/SSIM — all framework-free and pixel-buffer based).
-- **`data`** — adapters that implement the ports: `MockSuperResolutionEngine` (real lightweight upscale + quality scoring, no native deps) and `EngineCatalog` (resolves engines per task; real engines plug in here). `EngineCatalog` is an `expect/actual` so each platform registers its own engines — the JVM build offers `OnnxSuperResolutionEngine` (ONNX Runtime: real Sub-Pixel CNN ×3 inference from the bundled `jvmMain/resources/models/super-resolution-10.onnx` model) ahead of the mock, while Android and iOS stay mock-only.
+- **`data`** — adapters that implement the ports: `MockSuperResolutionEngine` (real lightweight upscale + quality scoring, no native deps) and `EngineCatalog` (resolves engines per task; real engines plug in here). `EngineCatalog` is an `expect/actual` so each platform registers its own engines — the JVM build offers `OnnxSuperResolutionEngine` twice (ONNX Runtime: real Sub-Pixel CNN ×3 inference from the bundled `jvmMain/resources/models/super-resolution-10.onnx` model), once on the default CPU execution provider (`onnx-sr`) and once on the CoreML execution provider (`onnx-coreml-sr`), ahead of the mock, while Android and iOS stay mock-only.
 - **`presentation`** — `BenchmarkViewModel` (state holder that drives the use case and maps the result to UI models), `BenchmarkUiState`, and the Compose `BenchmarkScreen`.
 
 The UI depends only on abstractions, so each layer is unit-tested independently (see `shared/src/commonTest`).
