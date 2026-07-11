@@ -1,12 +1,13 @@
-package com.m4isper.kmpmlbench.benchmark.engine
+package com.m4isper.kmpmlbench.benchmark.domain.engine
 
-import com.m4isper.kmpmlbench.benchmark.model.BenchmarkInput
-import com.m4isper.kmpmlbench.benchmark.model.BenchmarkOutput
+import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
+import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 
 /**
- * Abstraction over an ML inference engine (ONNX Runtime, TFLite, NCNN, ...).
- * The benchmark harness only depends on this contract, so a real engine can be
- * dropped in later without touching the runner or the UI.
+ * Port (abstraction) over an ML inference engine (ONNX Runtime, TFLite, NCNN, ...).
+ * The benchmark use case depends only on this contract, so a real engine can be
+ * dropped in later without touching the runner or the UI. Implementations live
+ * in the `data` layer.
  */
 interface MlEngine {
     /** Stable identifier, e.g. "onnx-runtime", "mock-sr". */

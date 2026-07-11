@@ -1,13 +1,15 @@
-package com.m4isper.kmpmlbench.benchmark.engine
+package com.m4isper.kmpmlbench.benchmark.data.engine
 
-import com.m4isper.kmpmlbench.benchmark.model.BenchmarkInput
-import com.m4isper.kmpmlbench.benchmark.model.BenchmarkOutput
-import com.m4isper.kmpmlbench.benchmark.task.SuperResolutionTask
+import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
+import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
+import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
+import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 
 /**
- * Stand-in engine for the Super-Resolution task. It performs no real inference;
- * instead it runs a synthetic convolution sized to the *output* resolution so
- * that measured latency scales realistically with input size and upscale factor.
+ * Stand-in engine (data-layer adapter) for the Super-Resolution task. It
+ * performs no real inference; instead it runs a synthetic convolution sized to
+ * the *output* resolution so that measured latency scales realistically with
+ * input size and upscale factor.
  *
  * This lets the benchmarking harness (timing, percentiles, throughput) be
  * exercised end-to-end on Desktop before any native ML dependency is wired in.

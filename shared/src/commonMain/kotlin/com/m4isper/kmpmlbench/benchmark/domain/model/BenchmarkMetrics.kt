@@ -1,4 +1,4 @@
-package com.m4isper.kmpmlbench.benchmark.metrics
+package com.m4isper.kmpmlbench.benchmark.domain.model
 
 /**
  * Collected timing statistics for a single benchmark run.

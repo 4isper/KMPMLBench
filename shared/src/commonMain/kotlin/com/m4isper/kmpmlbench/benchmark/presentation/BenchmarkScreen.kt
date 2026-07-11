@@ -1,4 +1,4 @@
-package com.m4isper.kmpmlbench.benchmark.ui
+package com.m4isper.kmpmlbench.benchmark.presentation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -13,39 +13,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.m4isper.kmpmlbench.Greeting
-import com.m4isper.kmpmlbench.benchmark.BenchmarkRunner
-import com.m4isper.kmpmlbench.benchmark.engine.EngineCatalog
-import com.m4isper.kmpmlbench.benchmark.engine.MlEngine
-import com.m4isper.kmpmlbench.benchmark.metrics.BenchmarkResult
-import com.m4isper.kmpmlbench.benchmark.task.SuperResolutionTask
-import kotlinx.coroutines.launch
+import com.m4isper.kmpmlbench.benchmark.data.engine.EngineCatalog
+import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkRunner
 import org.jetbrains.compose.resources.painterResource
 import com.m4isper.kmpmlbench.generated.resources.Res
 import com.m4isper.kmpmlbench.generated.resources.compose_multiplatform
 
 @Composable
 fun BenchmarkScreen() {
-    val runner = remember { BenchmarkRunner() }
-
-    var scale by remember { mutableStateOf(2) }
-    var inputSize by remember { mutableStateOf(128) }
-    var iterationsStr by remember { mutableStateOf("50") }
-    var selectedEngineId by remember { mutableStateOf<String?>(null) }
-
-    var isRunning by remember { mutableStateOf(false) }
-    var progress by remember { mutableStateOf(0) }
-    var result by remember { mutableStateOf<BenchmarkResult?>(null) }
-
-    val task = SuperResolutionTask(scale, inputSize, inputSize)
-    val engines = remember(task) { EngineCatalog.enginesFor(task) }
-    LaunchedEffect(engines) {
-        if (selectedEngineId == null || engines.none { it.id == selectedEngineId }) {
-            selectedEngineId = engines.firstOrNull()?.id
-        }
+    val viewModel = remember {
+        BenchmarkViewModel(
+            runBenchmark = BenchmarkRunner(),
+            engineProvider = EngineCatalog,
+        )
     }
-    val iterations = iterationsStr.toIntOrNull()?.coerceAtLeast(1) ?: 50
+    val uiState by viewModel.state.collectAsState(initial = viewModel.state.value)
 
-    val scope = rememberCoroutineScope()
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.clear() }
+    }
 
     MaterialTheme {
         Column(
@@ -73,22 +59,26 @@ fun BenchmarkScreen() {
                     LabeledRow("Upscale factor") {
                         SegmentedChoice(
                             options = listOf(2, 4),
-                            selected = scale,
-                            onSelect = { scale = it },
+                            selected = uiState.scale,
+                            onSelect = viewModel::onScaleSelected,
                             label = { "×$it" },
                         )
                     }
                     LabeledRow("Input size") {
                         SegmentedChoice(
                             options = listOf(64, 128, 256),
-                            selected = inputSize,
-                            onSelect = { inputSize = it },
+                            selected = uiState.inputSize,
+                            onSelect = viewModel::onInputSizeSelected,
                             label = { "${it}px" },
                         )
                     }
+                    var iterationsStr by remember { mutableStateOf(uiState.iterations.toString()) }
                     OutlinedTextField(
                         value = iterationsStr,
-                        onValueChange = { iterationsStr = it.filter { c -> c.isDigit() } },
+                        onValueChange = {
+                            iterationsStr = it.filter { c -> c.isDigit() }
+                            viewModel.onIterationsChanged(iterationsStr.toIntOrNull() ?: 1)
+                        },
                         label = { Text("Iterations") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -101,43 +91,34 @@ fun BenchmarkScreen() {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Engine", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
-                    engines.forEach { engine ->
-                        EngineRow(engine, engine.id == selectedEngineId) {
-                            selectedEngineId = engine.id
-                        }
+                    uiState.engines.forEach { engine ->
+                        EngineRow(
+                            item = engine,
+                            selected = engine.id == uiState.selectedEngineId,
+                            onClick = { viewModel.onEngineSelected(engine.id) },
+                        )
                     }
                 }
             }
 
             Button(
-                onClick = {
-                    scope.launch {
-                        isRunning = true
-                        progress = 0
-                        result = null
-                        val engine: MlEngine = engines.first { it.id == selectedEngineId }
-                        result = runner.run(engine, task, iterations, warmup = 3) { done, _ ->
-                            progress = done
-                        }
-                        isRunning = false
-                    }
-                },
-                enabled = !isRunning,
+                onClick = viewModel::onRunClicked,
+                enabled = !uiState.isRunning,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (isRunning) "Running…" else "Run benchmark")
+                Text(if (uiState.isRunning) "Running…" else "Run benchmark")
             }
 
-            if (isRunning) {
+            if (uiState.isRunning) {
                 LinearProgressIndicator(
-                    progress = { if (iterations > 0) progress.toFloat() / iterations else 0f },
+                    progress = { uiState.progress },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
 
-            result?.let { ResultCard(it) }
+            uiState.result?.let { ResultCard(it) }
 
-            PreviewCard(scale)
+            PreviewCard(uiState.scale)
         }
     }
 }
@@ -180,7 +161,7 @@ private fun <T> SegmentedChoice(
 }
 
 @Composable
-private fun EngineRow(engine: MlEngine, selected: Boolean, onClick: () -> Unit) {
+private fun EngineRow(item: EngineItem, selected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -190,27 +171,27 @@ private fun EngineRow(engine: MlEngine, selected: Boolean, onClick: () -> Unit) 
     ) {
         RadioButton(selected = selected, onClick = onClick)
         Spacer(Modifier.width(8.dp))
-        Text(engine.displayName)
+        Text(item.name)
     }
 }
 
 @Composable
-private fun ResultCard(result: BenchmarkResult) {
-    val m = result.metrics
+private fun ResultCard(result: BenchmarkResultUi) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "${result.engineName} · ${result.task.displayName}",
+                "${result.engineName} · ${result.taskName}",
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(Modifier.height(8.dp))
-            MetricRow("Init time", "%.1f ms".format(m.initTimeMs))
-            MetricRow("Avg latency", "%.2f ms".format(m.avgLatencyMs))
-            MetricRow("Min / Max", "%.2f / %.2f ms".format(m.minLatencyMs, m.maxLatencyMs))
-            MetricRow("p50 latency", "%.2f ms".format(m.p50LatencyMs))
-            MetricRow("p95 latency", "%.2f ms".format(m.p95LatencyMs))
-            MetricRow("Throughput", "%.1f fps".format(m.throughputFps))
-            MetricRow("Iterations", "${m.iterations}")
+            MetricRow("Output", "${result.outputWidth}×${result.outputHeight}")
+            MetricRow("Init time", "${result.initTimeMs.format(1)} ms")
+            MetricRow("Avg latency", "${result.avgLatencyMs.format(2)} ms")
+            MetricRow("Min / Max", "${result.minLatencyMs.format(2)} / ${result.maxLatencyMs.format(2)} ms")
+            MetricRow("p50 latency", "${result.p50LatencyMs.format(2)} ms")
+            MetricRow("p95 latency", "${result.p95LatencyMs.format(2)} ms")
+            MetricRow("Throughput", "${result.throughputFps.format(1)} fps")
+            MetricRow("Iterations", "${result.iterations}")
         }
     }
 }
@@ -258,5 +239,25 @@ private fun PreviewCard(scale: Int) {
                 }
             }
         }
+    }
+}
+
+/** Multiplatform replacement for `String.format` (unavailable in commonMain). */
+private fun Double.format(decimals: Int): String {
+    var scale = 1.0
+    repeat(decimals) { scale *= 10.0 }
+    val rounded = kotlin.math.round(this * scale) / scale
+    val sign = if (rounded < 0.0) "-" else ""
+    val abs = kotlin.math.abs(rounded)
+    val intPart = abs.toLong()
+    val fracPart = kotlin.math.round((abs - intPart) * scale).toLong()
+    val (intDigits, fracDigits) = if (fracPart >= scale.toLong()) {
+        (intPart + 1L) to 0L
+    } else {
+        intPart to fracPart
+    }
+    return buildString {
+        append(sign).append(intDigits)
+        if (decimals > 0) append('.').append(fracDigits.toString().padStart(decimals, '0'))
     }
 }

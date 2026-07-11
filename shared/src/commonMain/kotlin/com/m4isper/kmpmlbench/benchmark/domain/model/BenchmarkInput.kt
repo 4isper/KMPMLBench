@@ -1,4 +1,4 @@
-package com.m4isper.kmpmlbench.benchmark.model
+package com.m4isper.kmpmlbench.benchmark.domain.model
 
 /**
  * Input handed to an engine for one inference. For Super-Resolution this is the
