@@ -50,4 +50,7 @@ data class BenchmarkUiState(
     val isRunning: Boolean = false,
     val progress: Float = 0f,
     val result: BenchmarkResultUi? = null,
+    /** Results of a multi-engine comparison run, or null if not compared yet. */
+    val comparison: List<BenchmarkResultUi>? = null,
+    val comparisonProgress: Float = 0f,
 )

@@ -86,6 +86,44 @@ class BenchmarkViewModel(
         }
     }
 
+    /**
+     * Runs every registered engine for the current task and collects their
+     * results into [BenchmarkUiState.comparison] so the UI can compare them
+     * side by side (latency, throughput, peak memory, quality).
+     */
+    fun onCompareClicked() {
+        val current = _state.value
+        if (current.isRunning) return
+
+        val task = buildTask(current)
+        val engines = engineProvider.enginesFor(task)
+        if (engines.isEmpty()) return
+
+        _state.update {
+            it.copy(isRunning = true, progress = 0f, comparison = null, comparisonProgress = 0f)
+        }
+
+        scope.launch {
+            val results = engines.mapIndexed { index, engine ->
+                val result = runBenchmark.run(
+                    engine = engine,
+                    task = task,
+                    iterations = current.iterations,
+                    warmup = 3,
+                ) { _, _ -> }
+                _state.update { it.copy(comparisonProgress = (index + 1).toFloat() / engines.size) }
+                result.toUi()
+            }
+            _state.update {
+                it.copy(
+                    isRunning = false,
+                    progress = 1f,
+                    comparison = results,
+                )
+            }
+        }
+    }
+
     /** Cancels the view model's coroutines; call when the UI is disposed. */
     fun clear() {
         scope.cancel()
@@ -105,6 +143,8 @@ class BenchmarkViewModel(
             it.copy(
                 engines = engines,
                 selectedEngineId = engines.firstOrNull()?.id ?: it.selectedEngineId,
+                comparison = null,
+                comparisonProgress = 0f,
             )
         }
     }

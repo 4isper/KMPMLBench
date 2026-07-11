@@ -1,6 +1,7 @@
 package com.m4isper.kmpmlbench.benchmark.presentation
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -143,6 +144,14 @@ fun BenchmarkScreen() {
                 Text(if (uiState.isRunning) "Running…" else "Run benchmark")
             }
 
+            OutlinedButton(
+                onClick = viewModel::onCompareClicked,
+                enabled = !uiState.isRunning && uiState.engines.size > 1,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Compare all engines (${uiState.engines.size})")
+            }
+
             if (uiState.isRunning) {
                 LinearProgressIndicator(
                     progress = { uiState.progress },
@@ -158,6 +167,10 @@ fun BenchmarkScreen() {
                     outputWidth = result.outputWidth,
                     outputHeight = result.outputHeight,
                 )
+            }
+
+            uiState.comparison?.let { comparison ->
+                ComparisonCard(comparison)
             }
         }
     }
@@ -297,6 +310,67 @@ private fun PreviewCard(
                         "Output ${outputWidth}×$outputHeight",
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Side-by-side comparison of every engine that ran for the task. Each metric is
+ * rendered as a horizontal bar chart so engines can be ranked at a glance.
+ * Quality metrics are task-specific (PSNR/SSIM for SR, accuracy for classification).
+ */
+@Composable
+private fun ComparisonCard(results: List<BenchmarkResultUi>) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("Engine comparison (${results.size})", style = MaterialTheme.typography.titleMedium)
+            BarChart("Avg latency (ms, lower is better)", results.map { it.engineName to it.avgLatencyMs }) { it.format(2) }
+            BarChart("Throughput (fps, higher is better)", results.map { it.engineName to it.throughputFps }) { it.format(1) }
+            BarChart("Peak memory (MB)", results.map { it.engineName to it.peakMemoryMb }) { it.format(1) }
+
+            when (results.first().quality) {
+                is SrQualityUi -> {
+                    BarChart("PSNR (dB, higher is better)", results.map { it.engineName to (it.quality as SrQualityUi).psnr }) { it.format(2) }
+                    BarChart("SSIM (higher is better)", results.map { it.engineName to (it.quality as SrQualityUi).ssim }) { it.format(4) }
+                }
+                is ClassificationQualityUi -> {
+                    BarChart("Accuracy (higher is better)", results.map { it.engineName to (it.quality as ClassificationQualityUi).accuracy }) { it.format(2) }
+                }
+            }
+        }
+    }
+}
+
+/** Horizontal bar chart: one labelled bar per [items] entry, scaled to the max value. */
+@Composable
+private fun BarChart(title: String, items: List<Pair<String, Double>>, format: (Double) -> String) {
+    if (items.isEmpty()) return
+    val max = items.maxOf { it.second }.let { if (it <= 0.0) 1.0 else it }
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        items.forEach { (label, value) ->
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+                    Text(format(value), style = MaterialTheme.typography.labelSmall)
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.extraSmall),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth((value / max).toFloat().coerceIn(0f, 1f))
+                            .height(8.dp)
+                            .background(MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.extraSmall),
                     )
                 }
             }

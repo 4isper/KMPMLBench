@@ -38,6 +38,12 @@ private class FakeProvider(private val engine: MlEngine) : EngineProvider {
     override fun enginesFor(task: BenchmarkTask) = listOf(engine)
 }
 
+private class TwoEngineProvider : EngineProvider {
+    private val a = FakeEngine(id = "a", displayName = "Engine A")
+    private val b = FakeEngine(id = "b", displayName = "Engine B")
+    override fun enginesFor(task: BenchmarkTask) = listOf(a, b)
+}
+
 private class FakeUseCase : BenchmarkUseCase {
     var runCalls = 0
     var lastIterations = -1
@@ -136,6 +142,33 @@ class BenchmarkViewModelTest {
         assertEquals(28.0, result.quality.psnr, 0.0)
         assertEquals(0.85, result.quality.ssim, 0.0)
         assertEquals(3.0, result.maxLatencyMs, 0.0)
+        vm.clear()
+    }
+
+    @Test
+    fun compareRunsEveryEngineAndPopulatesComparison() = runBlocking {
+        val vm = BenchmarkViewModel(FakeUseCase(), TwoEngineProvider())
+        vm.onIterationsChanged(10)
+        vm.onCompareClicked()
+
+        withTimeout(5000) {
+            while (vm.state.value.isRunning) delay(10)
+        }
+
+        val comparison = checkNotNull(vm.state.value.comparison) { "comparison present" }
+        assertEquals(2, comparison.size)
+        assertEquals("Engine A", comparison[0].engineName)
+        assertEquals("Engine B", comparison[1].engineName)
+        // Single-run result is left untouched by a comparison run.
+        assertEquals(null, vm.state.value.result)
+        vm.clear()
+    }
+
+    @Test
+    fun taskSwitchClearsComparison() {
+        val vm = BenchmarkViewModel(FakeUseCase(), FakeProvider(FakeEngine()))
+        vm.onTaskSelected(ClassificationTask().id)
+        assertEquals(null, vm.state.value.comparison)
         vm.clear()
     }
 }
