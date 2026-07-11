@@ -62,6 +62,7 @@ kotlin {
             kotlin.srcDir("src/androidJvmMain/kotlin")
             dependencies {
                 implementation(libs.onnxruntime.android)
+                implementation(libs.litert)
             }
         }
         commonTest.dependencies {

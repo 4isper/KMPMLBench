@@ -10,7 +10,9 @@ import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
  * Android engine registry. The real ONNX Runtime engine runs on-device via the
  * `onnxruntime-android` native build (same `ai.onnxruntime` API as Desktop),
  * offered once on the default CPU provider and once on NNAPI so the UI can
- * compare the two execution paths on the same model — both ahead of the mock.
+ * compare the two execution paths on the same model. The LiteRT (TensorFlow
+ * Lite) classification engine adds a second real backend on-device. All real
+ * engines are registered ahead of the mock.
  */
 actual fun platformEnginesFor(task: BenchmarkTask): List<MlEngine> = when (task) {
     is SuperResolutionTask -> listOf(
@@ -21,6 +23,7 @@ actual fun platformEnginesFor(task: BenchmarkTask): List<MlEngine> = when (task)
     is ClassificationTask -> listOf(
         OnnxClassificationEngine(task),
         OnnxClassificationEngine(task, executionProvider = "nnapi"),
+        LiteRtClassificationEngine(task),
         MockClassificationEngine(task),
     )
     is ObjectDetectionTask -> listOf(
