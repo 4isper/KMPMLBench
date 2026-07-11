@@ -49,8 +49,20 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
         }
-        jvmMain.dependencies {
-            implementation(libs.onnxruntime)
+        jvmMain {
+            // The real engines share the same `ai.onnxruntime` API on Desktop/JVM and
+            // Android, so their source (src/androidJvmMain/kotlin) is compiled by both
+            // targets instead of being duplicated.
+            kotlin.srcDir("src/androidJvmMain/kotlin")
+            dependencies {
+                implementation(libs.onnxruntime)
+            }
+        }
+        androidMain {
+            kotlin.srcDir("src/androidJvmMain/kotlin")
+            dependencies {
+                implementation(libs.onnxruntime.android)
+            }
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

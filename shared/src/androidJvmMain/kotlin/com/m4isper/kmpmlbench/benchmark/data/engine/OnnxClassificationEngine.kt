@@ -7,6 +7,8 @@ import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ClassificationQualityMetrics
+import com.m4isper.kmpmlbench.benchmark.data.engine.configureProvider
+import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelBytes
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import kotlin.math.exp
@@ -33,26 +35,29 @@ class OnnxClassificationEngine(
     private val inputSize: Int = 224,
     private val executionProvider: String = "cpu",
 ) : MlEngine {
-    override val id: String = if (executionProvider == "coreml") "onnx-cls-coreml" else "onnx-cls"
+    override val id: String = when (executionProvider) {
+        "coreml" -> "onnx-cls-coreml"
+        "nnapi" -> "onnx-cls-nnapi"
+        else -> "onnx-cls"
+    }
     override val displayName: String =
-        "ONNX Classification (MobileNetV2)" + if (executionProvider == "coreml") " · CoreML" else ""
+        "ONNX Classification (MobileNetV2)" + when (executionProvider) {
+            "coreml" -> " · CoreML"
+            "nnapi" -> " · NNAPI"
+            else -> ""
+        }
 
     private val env = OrtEnvironment.getEnvironment()
     private var session: OrtSession? = null
     private var labels: List<String> = emptyList()
 
     override fun initialize() {
-        val modelBytes = checkNotNull(
-            javaClass.classLoader.getResourceAsStream(modelResourcePath),
-        ) { "ONNX model resource not found on classpath: $modelResourcePath" }.use { it.readBytes() }
+        val modelBytes = loadModelBytes(modelResourcePath)
         val options = OrtSession.SessionOptions()
-        if (executionProvider == "coreml") options.addCoreML()
+        configureProvider(options, executionProvider)
         session = env.createSession(modelBytes, options)
 
-        labels = javaClass.classLoader.getResourceAsStream(labelsResourcePath)
-            ?.bufferedReader()
-            ?.use { it.readLines() }
-            ?: emptyList()
+        labels = loadModelBytes(labelsResourcePath).decodeToString().lines()
     }
 
     override fun infer(input: BenchmarkInput): BenchmarkOutput {

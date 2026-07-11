@@ -8,6 +8,8 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
+import com.m4isper.kmpmlbench.benchmark.data.engine.configureProvider
+import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelBytes
 import com.m4isper.kmpmlbench.benchmark.domain.processing.computePsnr
 import com.m4isper.kmpmlbench.benchmark.domain.processing.computeSsim
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
@@ -33,9 +35,17 @@ class OnnxSuperResolutionEngine(
     private val scale: Int = 3,
     private val executionProvider: String = "cpu",
 ) : MlEngine {
-    override val id: String = if (executionProvider == "coreml") "onnx-coreml-sr" else "onnx-sr"
+    override val id: String = when (executionProvider) {
+        "coreml" -> "onnx-coreml-sr"
+        "nnapi" -> "onnx-sr-nnapi"
+        else -> "onnx-sr"
+    }
     override val displayName: String =
-        "ONNX SR (Sub-Pixel CNN ×$scale)" + if (executionProvider == "coreml") " · CoreML" else ""
+        "ONNX SR (Sub-Pixel CNN ×$scale)" + when (executionProvider) {
+            "coreml" -> " · CoreML"
+            "nnapi" -> " · NNAPI"
+            else -> ""
+        }
 
     private val env = OrtEnvironment.getEnvironment()
     private var session: OrtSession? = null
@@ -47,11 +57,9 @@ class OnnxSuperResolutionEngine(
     }
 
     override fun initialize() {
-        val bytes = checkNotNull(
-            javaClass.classLoader.getResourceAsStream(modelResourcePath),
-        ) { "ONNX model resource not found on classpath: $modelResourcePath" }.use { it.readBytes() }
+        val bytes = loadModelBytes(modelResourcePath)
         val options = OrtSession.SessionOptions()
-        if (executionProvider == "coreml") options.addCoreML()
+        configureProvider(options, executionProvider)
         session = env.createSession(bytes, options)
     }
 
