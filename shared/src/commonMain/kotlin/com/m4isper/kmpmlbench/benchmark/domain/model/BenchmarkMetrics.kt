@@ -21,4 +21,6 @@ data class BenchmarkMetrics(
     val p95LatencyMs: Double,
     /** Inferences per second derived from the average latency. */
     val throughputFps: Double,
+    /** Peak process memory observed during the run, in megabytes (best-effort). */
+    val peakMemoryMb: Double,
 )

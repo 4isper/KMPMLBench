@@ -71,6 +71,7 @@ private class FakeUseCase : BenchmarkUseCase {
                 p50LatencyMs = 2.0,
                 p95LatencyMs = 3.0,
                 throughputFps = 500.0,
+                peakMemoryMb = 25.0,
             ),
             quality = QualityMetrics(28.0, 0.85),
         )

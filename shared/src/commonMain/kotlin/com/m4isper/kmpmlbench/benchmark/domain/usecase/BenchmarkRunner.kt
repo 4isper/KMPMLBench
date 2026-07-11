@@ -5,6 +5,8 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
+import com.m4isper.kmpmlbench.benchmark.data.platform.currentMemoryUsageMb
+import kotlin.math.max
 import kotlin.time.TimeSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,12 +26,14 @@ class BenchmarkRunner : BenchmarkUseCase {
         onProgress: (done: Int, total: Int) -> Unit,
     ): BenchmarkResult = withContext(Dispatchers.Default) {
         val initTimeMs = measureMs { engine.initialize() }
+        var peakMemoryMb = currentMemoryUsageMb()
 
         val input = task.createInput()
 
         var warmupMs: Double? = null
         repeat(warmup) {
             warmupMs = (warmupMs ?: 0.0) + measureMs { engine.infer(input) }
+            peakMemoryMb = max(peakMemoryMb, currentMemoryUsageMb())
         }
 
         var sampleOutput: BenchmarkOutput? = null
@@ -38,11 +42,12 @@ class BenchmarkRunner : BenchmarkUseCase {
                 val out = engine.infer(input)
                 if (i == 0) sampleOutput = out
             }
+            peakMemoryMb = max(peakMemoryMb, currentMemoryUsageMb())
             onProgress(i + 1, iterations)
             ms
         }
 
-        val metrics = computeMetrics(initTimeMs, warmupMs, latencies)
+        val metrics = computeMetrics(initTimeMs, warmupMs, latencies, peakMemoryMb)
         val output = sampleOutput ?: engine.infer(input)
         val quality = output.quality
 
@@ -63,6 +68,7 @@ class BenchmarkRunner : BenchmarkUseCase {
         initTimeMs: Double,
         warmupMs: Double?,
         latencies: DoubleArray,
+        peakMemoryMb: Double,
     ): BenchmarkMetrics {
         val sorted = latencies.sorted()
         val sum = sorted.sum()
@@ -77,6 +83,7 @@ class BenchmarkRunner : BenchmarkUseCase {
             p50LatencyMs = Stats.percentile(sorted, 50.0),
             p95LatencyMs = Stats.percentile(sorted, 95.0),
             throughputFps = if (avg > 0.0) 1000.0 / avg else 0.0,
+            peakMemoryMb = peakMemoryMb,
         )
     }
 }

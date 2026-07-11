@@ -25,6 +25,7 @@ data class BenchmarkResultUi(
     val p50LatencyMs: Double,
     val p95LatencyMs: Double,
     val throughputFps: Double,
+    val peakMemoryMb: Double,
     val iterations: Int,
 )
 

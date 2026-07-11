@@ -50,6 +50,6 @@ We measure more than just speed:
 1. **Inference Latency:** Average time per execution, plus min/max, p50 and p95 (ms) — *implemented*.
 2. **Initialization Time:** Cold-start model load (ms) — *implemented*.
 3. **Throughput:** Inferences per second — *implemented*.
-4. **Memory Peak:** Maximum RAM/VRAM usage (MB) — *planned*.
+4. **Memory Peak:** Maximum RAM/VRAM usage (MB) — *implemented* (peak process memory sampled across init, warm-up, and the measured loop via a portable `expect/actual` counter; VRAM is not separately tracked).
 5. **Energy Consumption:** (Mobile only) Battery impact during prolonged tasks — *planned*.
 6. **Quality (PSNR/SSIM):** *implemented* — the mock and ONNX engines upscale a synthetic image and score the reconstruction against the ground truth.

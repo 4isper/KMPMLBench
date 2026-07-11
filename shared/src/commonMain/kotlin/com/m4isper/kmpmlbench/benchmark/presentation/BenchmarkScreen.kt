@@ -199,6 +199,7 @@ private fun ResultCard(result: BenchmarkResultUi) {
             MetricRow("p50 latency", "${result.p50LatencyMs.format(2)} ms")
             MetricRow("p95 latency", "${result.p95LatencyMs.format(2)} ms")
             MetricRow("Throughput", "${result.throughputFps.format(1)} fps")
+            MetricRow("Peak memory", "${result.peakMemoryMb.format(1)} MB")
             MetricRow("PSNR", "${result.psnr.format(2)} dB")
             MetricRow("SSIM", result.ssim.format(4))
             MetricRow("Iterations", "${result.iterations}")

@@ -19,5 +19,6 @@ fun BenchmarkResult.toUi(): BenchmarkResultUi = BenchmarkResultUi(
     p50LatencyMs = metrics.p50LatencyMs,
     p95LatencyMs = metrics.p95LatencyMs,
     throughputFps = metrics.throughputFps,
+    peakMemoryMb = metrics.peakMemoryMb,
     iterations = metrics.iterations,
 )

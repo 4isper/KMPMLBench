@@ -34,6 +34,7 @@ class BenchmarkResultMapperTest {
                 p50LatencyMs = 2.0,
                 p95LatencyMs = 3.8,
                 throughputFps = 400.0,
+                peakMemoryMb = 50.0,
             ),
             quality = QualityMetrics(30.0, 0.9),
         )
@@ -50,6 +51,7 @@ class BenchmarkResultMapperTest {
         assertEquals(0.9, ui.ssim, 0.0)
         assertEquals(2.5, ui.avgLatencyMs, 0.0)
         assertEquals(400.0, ui.throughputFps, 0.0)
+        assertEquals(50.0, ui.peakMemoryMb, 0.0)
         assertEquals(10, ui.iterations)
     }
 }
