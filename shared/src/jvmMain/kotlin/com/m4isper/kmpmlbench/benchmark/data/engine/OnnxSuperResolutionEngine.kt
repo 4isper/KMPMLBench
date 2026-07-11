@@ -10,7 +10,6 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.model.QualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.processing.computePsnr
 import com.m4isper.kmpmlbench.benchmark.domain.processing.computeSsim
-import com.m4isper.kmpmlbench.benchmark.domain.processing.generateSyntheticImage
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import java.nio.FloatBuffer
 
@@ -85,10 +84,16 @@ class OnnxSuperResolutionEngine(
             val crUp = upscaleChannel(cr, inW, inH, scale)
             val reconstructed = ycbcrToArgb(yOut, cbUp, crUp, outW, outH)
 
-            val gt = generateSyntheticImage(outW, outH, seed = 42)
+            // Quality is scored against the task's ground truth (the same HR image
+            // the low-res input was downsampled from), so PSNR/SSIM reflect how
+            // well the model reconstructs the actual frame rather than a synthetic
+            // pattern. The model is fixed at 672x672 out, so the GT is rescaled to
+            // match when the task requests a different output resolution.
+            val gt = task.groundTruth()
+            val gtScaled = if (gt.width == outW && gt.height == outH) gt else resizeBilinear(gt, outW, outH)
             val quality = QualityMetrics(
-                psnr = computePsnr(gt, reconstructed),
-                ssim = computeSsim(gt, reconstructed),
+                psnr = computePsnr(gtScaled, reconstructed),
+                ssim = computeSsim(gtScaled, reconstructed),
             )
             return BenchmarkOutput(outW, outH, reconstructed, quality)
         } finally {
