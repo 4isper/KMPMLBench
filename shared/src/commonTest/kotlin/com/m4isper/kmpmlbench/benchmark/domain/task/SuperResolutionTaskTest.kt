@@ -10,7 +10,17 @@ class SuperResolutionTaskTest {
         val input = task.createInput()
         assertEquals(32, input.width)
         assertEquals(24, input.height)
-        assertEquals("Input 32×24", input.label)
+        assertEquals("LR 32×24", input.label)
+        assertEquals(32, input.image.width)
+        assertEquals(24, input.image.height)
+    }
+
+    @Test
+    fun groundTruthMatchesOutputDimensions() {
+        val task = SuperResolutionTask(scale = 4, inputWidth = 10, inputHeight = 8)
+        val gt = task.groundTruth()
+        assertEquals(40, gt.width)
+        assertEquals(32, gt.height)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.m4isper.kmpmlbench.benchmark.data.engine
 
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
+import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import kotlin.test.Test
@@ -20,7 +21,8 @@ class EngineCatalogTest {
         val engines = EngineCatalog.enginesFor(object : BenchmarkTask {
             override val id: String = "fake-task"
             override val displayName: String = "Fake Task"
-            override fun createInput(): BenchmarkInput = BenchmarkInput(1, 1, "x")
+            override fun createInput(): BenchmarkInput =
+                BenchmarkInput(1, 1, "x", ImageBuffer(1, 1, IntArray(1)))
         })
         assertTrue(engines.isEmpty())
     }

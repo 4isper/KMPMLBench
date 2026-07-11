@@ -7,6 +7,8 @@ data class BenchmarkResult(
     val engineId: String,
     val engineName: String,
     val task: BenchmarkTask,
+    val input: BenchmarkInput,
     val output: BenchmarkOutput,
     val metrics: BenchmarkMetrics,
+    val quality: QualityMetrics,
 )

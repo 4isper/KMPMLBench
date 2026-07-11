@@ -26,5 +26,11 @@ class BenchmarkRunnerTest {
         assertTrue(result.metrics.maxLatencyMs >= result.metrics.avgLatencyMs, "max >= avg")
         assertTrue(result.metrics.p95LatencyMs >= result.metrics.p50LatencyMs, "p95 >= p50")
         assertTrue(result.metrics.throughputFps > 0.0, "throughput positive")
+        assertEquals(task.inputWidth, result.input.width)
+        assertEquals(task.inputHeight, result.input.height)
+        assertTrue(result.quality.psnr.isFinite(), "psnr finite")
+        assertTrue(result.quality.psnr > 0.0, "psnr positive")
+        assertTrue(result.quality.ssim > 0.0, "ssim positive")
+        assertTrue(result.quality.ssim <= 1.0, "ssim <= 1")
     }
 }

@@ -44,6 +44,7 @@ class BenchmarkRunner : BenchmarkUseCase {
 
         val metrics = computeMetrics(initTimeMs, warmupMs, latencies)
         val output = sampleOutput ?: engine.infer(input)
+        val quality = output.quality
 
         engine.close()
 
@@ -51,8 +52,10 @@ class BenchmarkRunner : BenchmarkUseCase {
             engineId = engine.id,
             engineName = engine.displayName,
             task = task,
+            input = input,
             output = output,
             metrics = metrics,
+            quality = quality,
         )
     }
 
