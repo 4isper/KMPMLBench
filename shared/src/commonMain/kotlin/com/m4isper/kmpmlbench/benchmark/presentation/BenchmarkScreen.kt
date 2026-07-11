@@ -21,8 +21,10 @@ import com.m4isper.kmpmlbench.benchmark.data.engine.EngineCatalog
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.processing.downsample
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkRunner
 import com.m4isper.kmpmlbench.benchmark.presentation.ClassificationQualityUi
+import com.m4isper.kmpmlbench.benchmark.presentation.DetectionQualityUi
 import com.m4isper.kmpmlbench.benchmark.presentation.SrQualityUi
 
 @Composable
@@ -63,10 +65,16 @@ fun BenchmarkScreen() {
                 ) {
                     Text("Task", style = MaterialTheme.typography.titleMedium)
                     SegmentedChoice(
-                        options = listOf("super-resolution", ClassificationTask().id),
+                        options = listOf("super-resolution", ClassificationTask().id, ObjectDetectionTask().id),
                         selected = uiState.selectedTaskId,
                         onSelect = viewModel::onTaskSelected,
-                        label = { if (it == ClassificationTask().id) "Classification" else "Super-Resolution" },
+                        label = {
+                            when (it) {
+                                ClassificationTask().id -> "Classification"
+                                ObjectDetectionTask().id -> "Object Detection"
+                                else -> "Super-Resolution"
+                            }
+                        },
                     )
                 }
             }
@@ -77,34 +85,43 @@ fun BenchmarkScreen() {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        if (uiState.selectedTaskId == ClassificationTask().id) {
-                            "Classification · ${ClassificationTask().displayName}"
-                        } else {
-                            "Super-Resolution"
+                        when (uiState.selectedTaskId) {
+                            ClassificationTask().id -> "Classification · ${ClassificationTask().displayName}"
+                            ObjectDetectionTask().id -> "Object Detection · ${ObjectDetectionTask().displayName}"
+                            else -> "Super-Resolution"
                         },
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    if (uiState.selectedTaskId == ClassificationTask().id) {
-                        Text(
-                            "Mock engine · 224×224 input · 10 synthetic classes",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    } else {
-                        LabeledRow("Upscale factor") {
-                            SegmentedChoice(
-                                options = listOf(2, 4),
-                                selected = uiState.scale,
-                                onSelect = viewModel::onScaleSelected,
-                                label = { "×$it" },
+                    when (uiState.selectedTaskId) {
+                        ClassificationTask().id -> {
+                            Text(
+                                "Mock engine · 224×224 input · 10 synthetic classes",
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
-                        LabeledRow("Input size") {
-                            SegmentedChoice(
-                                options = listOf(64, 128, 256),
-                                selected = uiState.inputSize,
-                                onSelect = viewModel::onInputSizeSelected,
-                                label = { "${it}px" },
+                        ObjectDetectionTask().id -> {
+                            Text(
+                                "Mock + ONNX engines · 640×640 input · 80 COCO classes",
+                                style = MaterialTheme.typography.bodySmall,
                             )
+                        }
+                        else -> {
+                            LabeledRow("Upscale factor") {
+                                SegmentedChoice(
+                                    options = listOf(2, 4),
+                                    selected = uiState.scale,
+                                    onSelect = viewModel::onScaleSelected,
+                                    label = { "×$it" },
+                                )
+                            }
+                            LabeledRow("Input size") {
+                                SegmentedChoice(
+                                    options = listOf(64, 128, 256),
+                                    selected = uiState.inputSize,
+                                    onSelect = viewModel::onInputSizeSelected,
+                                    label = { "${it}px" },
+                                )
+                            }
                         }
                     }
                     var iterationsStr by remember { mutableStateOf(uiState.iterations.toString()) }
@@ -259,6 +276,11 @@ private fun ResultCard(result: BenchmarkResultUi) {
                         MetricRow("  top-${i + 1}", "$label · ${p.format(4)}")
                     }
                 }
+                is DetectionQualityUi -> {
+                    MetricRow("Detections", "${q.numDetections}")
+                    MetricRow("Mean confidence", q.meanConfidence.format(4))
+                    MetricRow("mAP@0.5", q.mAP.format(4))
+                }
             }
         }
     }
@@ -341,6 +363,10 @@ private fun ComparisonCard(results: List<BenchmarkResultUi>) {
                 }
                 is ClassificationQualityUi -> {
                     BarChart("Accuracy (higher is better)", results.map { it.engineName to (it.quality as ClassificationQualityUi).accuracy }) { it.format(2) }
+                }
+                is DetectionQualityUi -> {
+                    BarChart("mAP@0.5 (higher is better)", results.map { it.engineName to (it.quality as DetectionQualityUi).mAP }) { it.format(4) }
+                    BarChart("Detections", results.map { it.engineName to (it.quality as DetectionQualityUi).numDetections.toDouble() }) { it.format(0) }
                 }
             }
         }

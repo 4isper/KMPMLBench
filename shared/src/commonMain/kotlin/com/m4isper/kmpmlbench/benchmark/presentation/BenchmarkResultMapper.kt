@@ -2,6 +2,7 @@ package com.m4isper.kmpmlbench.benchmark.presentation
 
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
 import com.m4isper.kmpmlbench.benchmark.domain.model.ClassificationQualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.model.DetectionQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.QualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
@@ -35,5 +36,10 @@ fun QualityMetrics.toUi(): QualityUi = when (this) {
         confidence = confidence,
         topK = topK,
         accuracy = accuracy,
+    )
+    is DetectionQualityMetrics -> DetectionQualityUi(
+        numDetections = numDetections,
+        meanConfidence = meanConfidence,
+        mAP = mAP,
     )
 }

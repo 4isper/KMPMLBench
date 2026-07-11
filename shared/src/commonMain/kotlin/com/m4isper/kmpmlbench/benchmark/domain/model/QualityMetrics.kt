@@ -22,3 +22,11 @@ data class ClassificationQualityMetrics(
     /** 1.0 when the predicted class matches the input's expected label, else 0.0. */
     val accuracy: Double,
 ) : QualityMetrics
+
+/** Object-detection quality: detection count, mean confidence, and mAP@0.5. */
+data class DetectionQualityMetrics(
+    val numDetections: Int,
+    val meanConfidence: Double,
+    /** Mean Average Precision at IoU 0.5 vs the task's ground-truth boxes, in [0, 1]. */
+    val mAP: Double,
+) : QualityMetrics

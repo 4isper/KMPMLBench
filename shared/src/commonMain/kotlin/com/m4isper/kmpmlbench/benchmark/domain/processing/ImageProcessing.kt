@@ -1,5 +1,7 @@
 package com.m4isper.kmpmlbench.benchmark.domain.processing
 
+import com.m4isper.kmpmlbench.benchmark.domain.model.Box
+import com.m4isper.kmpmlbench.benchmark.domain.model.Detection
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import kotlin.math.ln
 
@@ -137,4 +139,127 @@ fun computeSsim(reference: ImageBuffer, reconstructed: ImageBuffer): Double {
     val c2 = (0.03 * 255) * (0.03 * 255)
     val den = (meanX * meanX + meanY * meanY + c1) * (varX + varY + c2)
     return if (den == 0.0) 1.0 else (2 * meanX * meanY + c1) * (2 * cov + c2) / den
+}
+
+/** General ARGB bilinear resize to an arbitrary [outW]x[outH] target. */
+fun resizeBilinear(src: ImageBuffer, outW: Int, outH: Int): ImageBuffer {
+    val inW = src.width
+    val inH = src.height
+    val out = IntArray(outW * outH)
+    for (y in 0 until outH) {
+        val sy = (y.toDouble() + 0.5) * inH / outH - 0.5
+        val y0 = sy.toInt().coerceIn(0, inH - 1)
+        val y1 = (y0 + 1).coerceAtMost(inH - 1)
+        val fy = sy - y0
+        for (x in 0 until outW) {
+            val sx = (x.toDouble() + 0.5) * inW / outW - 0.5
+            val x0 = sx.toInt().coerceIn(0, inW - 1)
+            val x1 = (x0 + 1).coerceAtMost(inW - 1)
+            val fx = sx - x0
+            out[y * outW + x] = interpolate(
+                src.pixels[y0 * inW + x0],
+                src.pixels[y0 * inW + x1],
+                src.pixels[y1 * inW + x0],
+                src.pixels[y1 * inW + x1],
+                fx,
+                fy,
+            )
+        }
+    }
+    return ImageBuffer(outW, outH, out)
+}
+
+/** Intersection-over-Union of two normalized [Box]es. */
+fun iou(a: Box, b: Box): Float {
+    val ax2 = a.x + a.w
+    val ay2 = a.y + a.h
+    val bx2 = b.x + b.w
+    val by2 = b.y + b.h
+    val ix = maxOf(a.x, b.x)
+    val iy = maxOf(a.y, b.y)
+    val ix2 = minOf(ax2, bx2)
+    val iy2 = minOf(ay2, by2)
+    val iw = maxOf(0f, ix2 - ix)
+    val ih = maxOf(0f, iy2 - iy)
+    val inter = iw * ih
+    val union = a.w * a.h + b.w * b.h - inter
+    return if (union <= 0f) 0f else inter / union
+}
+
+/**
+ * Mean Average Precision @ IoU 0.5 of [predictions] against [groundTruth].
+ *
+ * Assigns each prediction (sorted by confidence) to the best unused ground-truth
+ * box of the same class with IoU >= [iouThreshold], then reports an F1-like
+ * blend of precision and recall in [0, 1] so engines stay directly comparable.
+ */
+fun evaluateDetections(
+    predictions: List<Detection>,
+    groundTruth: List<Detection>,
+    iouThreshold: Float = 0.5f,
+): Double {
+    if (groundTruth.isEmpty()) return if (predictions.isEmpty()) 1.0 else 0.0
+    val used = BooleanArray(groundTruth.size)
+    var tp = 0
+    for (p in predictions.sortedByDescending { it.confidence }) {
+        var best = -1
+        var bestIou = iouThreshold
+        for (g in groundTruth.indices) {
+            if (used[g]) continue
+            if (groundTruth[g].label != p.label) continue
+            val v = iou(p.box, groundTruth[g].box)
+            if (v > bestIou) {
+                bestIou = v
+                best = g
+            }
+        }
+        if (best >= 0) {
+            used[best] = true
+            tp++
+        }
+    }
+    val fp = predictions.size - tp
+    val precision = if (predictions.isEmpty()) 1.0 else tp.toDouble() / (tp + fp)
+    val recall = tp.toDouble() / groundTruth.size
+    return if (precision + recall == 0.0) 0.0 else 2 * precision * recall / (precision + recall)
+}
+
+/** Draws the [detections] as bright rectangles onto a copy of [src]. */
+fun drawBoxes(src: ImageBuffer, detections: List<Detection>): ImageBuffer {
+    val pixels = src.pixels.copyOf()
+    val w = src.width
+    val h = src.height
+    for (d in detections) {
+        val color = boxColor(d.label)
+        val x0 = (d.box.x * w).toInt().coerceIn(0, w - 1)
+        val y0 = (d.box.y * h).toInt().coerceIn(0, h - 1)
+        val x1 = ((d.box.x + d.box.w) * w).toInt().coerceIn(0, w - 1)
+        val y1 = ((d.box.y + d.box.h) * h).toInt().coerceIn(0, h - 1)
+        drawRect(pixels, w, h, x0, y0, x1, y1, color)
+    }
+    return ImageBuffer(w, h, pixels)
+}
+
+private fun drawRect(pixels: IntArray, w: Int, h: Int, x0: Int, y0: Int, x1: Int, y1: Int, color: Int) {
+    for (x in x0..x1) {
+        setPx(pixels, w, h, x, y0, color)
+        setPx(pixels, w, h, x, y1, color)
+    }
+    for (y in y0..y1) {
+        setPx(pixels, w, h, x0, y, color)
+        setPx(pixels, w, h, x1, y, color)
+    }
+}
+
+private fun setPx(pixels: IntArray, w: Int, h: Int, x: Int, y: Int, color: Int) {
+    if (x in 0..<w && y in 0..<h) pixels[y * w + x] = color
+}
+
+/** Deterministic bright ARGB color derived from the detection label. */
+private fun boxColor(label: String): Int {
+    val c = kotlin.math.abs(label.hashCode())
+    val r = 80 + (c and 0xFF)
+    val g = 80 + ((c shr 8) and 0xFF)
+    val b = 80 + ((c shr 16) and 0xFF)
+    return (255 shl 24) or (r shl 16) or (g shl 8) or b
 }

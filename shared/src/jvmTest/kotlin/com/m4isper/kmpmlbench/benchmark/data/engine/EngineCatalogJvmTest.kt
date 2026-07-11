@@ -5,6 +5,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.ClassificationQualityMetric
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -27,6 +28,13 @@ class EngineCatalogJvmTest {
         assertEquals("onnx-cls", engines.first().id)
         assertTrue(engines.any { it.id == "onnx-cls-coreml" })
         assertTrue(engines.any { it.id == "mock-cls" })
+    }
+
+    @Test
+    fun objectDetectionOffersOnnxAndMock() {
+        val engines = EngineCatalog.enginesFor(ObjectDetectionTask())
+        assertEquals("onnx-od", engines.first().id)
+        assertTrue(engines.any { it.id == "mock-od" })
     }
 
     @Test

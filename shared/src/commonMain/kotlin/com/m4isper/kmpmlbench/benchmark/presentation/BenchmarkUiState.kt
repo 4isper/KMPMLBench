@@ -19,6 +19,12 @@ data class ClassificationQualityUi(
     val accuracy: Double,
 ) : QualityUi
 
+data class DetectionQualityUi(
+    val numDetections: Int,
+    val meanConfidence: Double,
+    val mAP: Double,
+) : QualityUi
+
 data class BenchmarkResultUi(
     val engineName: String,
     val taskName: String,

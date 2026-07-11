@@ -4,6 +4,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.engine.EngineProvider
 import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 
 /**
@@ -23,6 +24,10 @@ actual object EngineCatalog : EngineProvider {
             OnnxClassificationEngine(task),
             OnnxClassificationEngine(task, executionProvider = "coreml"),
             MockClassificationEngine(task),
+        )
+        is ObjectDetectionTask -> listOf(
+            OnnxObjectDetectionEngine(task),
+            MockObjectDetectionEngine(task),
         )
         else -> emptyList()
     }

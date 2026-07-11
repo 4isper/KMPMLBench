@@ -3,6 +3,7 @@ package com.m4isper.kmpmlbench.benchmark.presentation
 import com.m4isper.kmpmlbench.benchmark.domain.engine.EngineProvider
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -132,6 +133,7 @@ class BenchmarkViewModel(
     /** Builds the domain task matching the current UI selection. */
     private fun buildTask(state: BenchmarkUiState): BenchmarkTask = when (state.selectedTaskId) {
         ClassificationTask().id -> ClassificationTask()
+        ObjectDetectionTask().id -> ObjectDetectionTask()
         else -> SuperResolutionTask(state.scale, state.inputSize, state.inputSize)
     }
 
