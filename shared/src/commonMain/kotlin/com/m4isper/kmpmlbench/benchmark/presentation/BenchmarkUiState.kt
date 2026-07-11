@@ -1,5 +1,7 @@
 package com.m4isper.kmpmlbench.benchmark.presentation
 
+import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
+
 /** Presentation models — the view never sees domain entities directly. */
 
 data class EngineItem(
@@ -12,6 +14,10 @@ data class BenchmarkResultUi(
     val taskName: String,
     val outputWidth: Int,
     val outputHeight: Int,
+    val inputImage: ImageBuffer,
+    val outputImage: ImageBuffer,
+    val psnr: Double,
+    val ssim: Double,
     val initTimeMs: Double,
     val avgLatencyMs: Double,
     val minLatencyMs: Double,

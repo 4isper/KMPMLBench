@@ -6,6 +6,8 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
+import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
+import com.m4isper.kmpmlbench.benchmark.domain.model.QualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
 import kotlinx.coroutines.delay
@@ -21,7 +23,12 @@ private class FakeEngine(
     var initCalls = 0
     var closed = false
     override fun initialize() { initCalls++ }
-    override fun infer(input: BenchmarkInput) = BenchmarkOutput(input.width * 2, input.height * 2)
+    override fun infer(input: BenchmarkInput) = BenchmarkOutput(
+        input.width * 2,
+        input.height * 2,
+        ImageBuffer(input.width * 2, input.height * 2, IntArray((input.width * 2) * (input.height * 2))),
+        QualityMetrics(30.0, 0.9),
+    )
     override fun close() { closed = true }
 }
 
@@ -47,7 +54,13 @@ private class FakeUseCase : BenchmarkUseCase {
             engineId = engine.id,
             engineName = engine.displayName,
             task = task,
-            output = BenchmarkOutput(64, 64),
+            input = BenchmarkInput(32, 32, "LR", ImageBuffer(32, 32, IntArray(1024))),
+            output = BenchmarkOutput(
+                64,
+                64,
+                ImageBuffer(64, 64, IntArray(4096)),
+                QualityMetrics(28.0, 0.85),
+            ),
             metrics = BenchmarkMetrics(
                 initTimeMs = 10.0,
                 warmupMs = 5.0,
@@ -59,6 +72,7 @@ private class FakeUseCase : BenchmarkUseCase {
                 p95LatencyMs = 3.0,
                 throughputFps = 500.0,
             ),
+            quality = QualityMetrics(28.0, 0.85),
         )
     }
 }
@@ -105,6 +119,9 @@ class BenchmarkViewModelTest {
         val result = checkNotNull(vm.state.value.result) { "result present" }
         assertEquals("Super-Resolution ×2", result.taskName)
         assertEquals(64, result.outputWidth)
+        assertEquals(32, result.inputImage.width)
+        assertEquals(28.0, result.psnr, 0.0)
+        assertEquals(0.85, result.ssim, 0.0)
         assertEquals(3.0, result.maxLatencyMs, 0.0)
         vm.clear()
     }

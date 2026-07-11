@@ -1,6 +1,6 @@
 package com.m4isper.kmpmlbench.benchmark.presentation
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,14 +10,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.m4isper.kmpmlbench.Greeting
 import com.m4isper.kmpmlbench.benchmark.data.engine.EngineCatalog
+import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
+import com.m4isper.kmpmlbench.benchmark.domain.processing.downsample
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkRunner
-import org.jetbrains.compose.resources.painterResource
-import com.m4isper.kmpmlbench.generated.resources.Res
-import com.m4isper.kmpmlbench.generated.resources.compose_multiplatform
 
 @Composable
 fun BenchmarkScreen() {
@@ -116,9 +118,15 @@ fun BenchmarkScreen() {
                 )
             }
 
-            uiState.result?.let { ResultCard(it) }
-
-            PreviewCard(uiState.scale)
+            uiState.result?.let { result ->
+                ResultCard(result)
+                PreviewCard(
+                    inputImage = result.inputImage,
+                    outputImage = result.outputImage,
+                    outputWidth = result.outputWidth,
+                    outputHeight = result.outputHeight,
+                )
+            }
         }
     }
 }
@@ -191,6 +199,8 @@ private fun ResultCard(result: BenchmarkResultUi) {
             MetricRow("p50 latency", "${result.p50LatencyMs.format(2)} ms")
             MetricRow("p95 latency", "${result.p95LatencyMs.format(2)} ms")
             MetricRow("Throughput", "${result.throughputFps.format(1)} fps")
+            MetricRow("PSNR", "${result.psnr.format(2)} dB")
+            MetricRow("SSIM", result.ssim.format(4))
             MetricRow("Iterations", "${result.iterations}")
         }
     }
@@ -208,35 +218,66 @@ private fun MetricRow(label: String, value: String) {
 }
 
 @Composable
-private fun PreviewCard(scale: Int) {
+private fun PreviewCard(
+    inputImage: ImageBuffer,
+    outputImage: ImageBuffer,
+    outputWidth: Int,
+    outputHeight: Int,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Preview (visual only)", style = MaterialTheme.typography.titleMedium)
+            Text("Preview (reconstructed pixels)", style = MaterialTheme.typography.titleMedium)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(
-                        painter = painterResource(Res.drawable.compose_multiplatform),
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                    )
-                    Text("LR input", style = MaterialTheme.typography.labelSmall)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    val out = (64 * scale).dp
-                    Image(
-                        painter = painterResource(Res.drawable.compose_multiplatform),
-                        contentDescription = null,
-                        modifier = Modifier.size(out.coerceAtMost(256.dp)),
-                    )
-                    Text("SR output ×$scale", style = MaterialTheme.typography.labelSmall)
-                }
+                PreviewImage(inputImage)
+                PreviewImage(outputImage)
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
+                Text(
+                    "LR ${inputImage.width}×${inputImage.height}",
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    "SR ${outputWidth}×$outputHeight",
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Draws a downsampled [buffer] onto a [Canvas] (portable, no platform pixel API).
+ * The buffer is shrunk to at most [maxDim] px per side so the rect count stays
+ * cheap even for large super-resolved outputs.
+ */
+@Composable
+private fun PreviewImage(buffer: ImageBuffer, maxDim: Int = 48) {
+    val preview = remember(buffer) {
+        val factor = (maxOf(buffer.width, buffer.height) + maxDim - 1) / maxDim
+        if (factor <= 1) buffer else downsample(buffer, factor)
+    }
+    Canvas(modifier = Modifier.size(preview.width.dp)) {
+        val cw = size.width / preview.width
+        val ch = size.height / preview.height
+        for (y in 0 until preview.height) {
+            for (x in 0 until preview.width) {
+                drawRect(
+                    color = Color(preview.pixels[y * preview.width + x]),
+                    topLeft = Offset(x * cw, y * ch),
+                    size = Size(cw, ch),
+                )
             }
         }
     }
