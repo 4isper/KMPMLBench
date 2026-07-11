@@ -1,17 +1,21 @@
 package com.m4isper.kmpmlbench.benchmark.presentation
 
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
+import com.m4isper.kmpmlbench.benchmark.domain.model.ClassificationQualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.model.QualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 
 /** Maps a domain [BenchmarkResult] into the presentation model. */
 fun BenchmarkResult.toUi(): BenchmarkResultUi = BenchmarkResultUi(
     engineName = engineName,
     taskName = task.displayName,
+    taskId = task.id,
     outputWidth = output.width,
     outputHeight = output.height,
     inputImage = input.image,
-    outputImage = output.image,
-    psnr = quality.psnr,
-    ssim = quality.ssim,
+    outputImage = if (task is ClassificationTask) null else output.image,
+    quality = quality.toUi(),
     initTimeMs = metrics.initTimeMs,
     avgLatencyMs = metrics.avgLatencyMs,
     minLatencyMs = metrics.minLatencyMs,
@@ -22,3 +26,14 @@ fun BenchmarkResult.toUi(): BenchmarkResultUi = BenchmarkResultUi(
     peakMemoryMb = metrics.peakMemoryMb,
     iterations = metrics.iterations,
 )
+
+/** Maps the sealed domain quality into the sealed UI quality. */
+fun QualityMetrics.toUi(): QualityUi = when (this) {
+    is SrQualityMetrics -> SrQualityUi(psnr, ssim)
+    is ClassificationQualityMetrics -> ClassificationQualityUi(
+        predictedClass = predictedClass,
+        confidence = confidence,
+        topK = topK,
+        accuracy = accuracy,
+    )
+}

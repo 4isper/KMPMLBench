@@ -3,7 +3,7 @@ package com.m4isper.kmpmlbench.benchmark.data.engine
 import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
-import com.m4isper.kmpmlbench.benchmark.domain.model.QualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.processing.computePsnr
 import com.m4isper.kmpmlbench.benchmark.domain.processing.computeSsim
 import com.m4isper.kmpmlbench.benchmark.domain.processing.upsampleBilinear
@@ -31,7 +31,7 @@ class MockSuperResolutionEngine(
     override fun infer(input: BenchmarkInput): BenchmarkOutput {
         val reconstructed = upsampleBilinear(input.image, task.scale)
         val gt = task.groundTruth()
-        val quality = QualityMetrics(
+        val quality = SrQualityMetrics(
             psnr = computePsnr(gt, reconstructed),
             ssim = computeSsim(gt, reconstructed),
         )

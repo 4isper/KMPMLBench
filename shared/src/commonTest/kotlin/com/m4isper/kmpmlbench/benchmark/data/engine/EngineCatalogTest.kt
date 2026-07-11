@@ -3,6 +3,7 @@ package com.m4isper.kmpmlbench.benchmark.data.engine
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,6 +16,12 @@ class EngineCatalogTest {
         assertTrue(engines.isNotEmpty())
         // The mock is always registered; real engines may be offered too (e.g. ONNX on Desktop).
         assertTrue(engines.any { it.id == "mock-sr" })
+    }
+
+    @Test
+    fun classificationReturnsTheMockEngine() {
+        val engines = EngineCatalog.enginesFor(ClassificationTask())
+        assertEquals("mock-cls", engines.singleOrNull()?.id)
     }
 
     @Test

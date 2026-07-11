@@ -1,6 +1,8 @@
 package com.m4isper.kmpmlbench.benchmark.presentation
 
 import com.m4isper.kmpmlbench.benchmark.domain.engine.EngineProvider
+import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +33,12 @@ class BenchmarkViewModel(
         refreshEngines()
     }
 
+    fun onTaskSelected(taskId: String) {
+        if (taskId == _state.value.selectedTaskId) return
+        _state.update { it.copy(selectedTaskId = taskId) }
+        refreshEngines()
+    }
+
     fun onScaleSelected(scale: Int) {
         _state.update { it.copy(scale = scale) }
         refreshEngines()
@@ -53,7 +61,7 @@ class BenchmarkViewModel(
         val current = _state.value
         if (current.isRunning || current.selectedEngineId == null) return
 
-        val task = SuperResolutionTask(current.scale, current.inputSize, current.inputSize)
+        val task = buildTask(current)
         val engine = engineProvider.enginesFor(task)
             .first { it.id == current.selectedEngineId }
 
@@ -83,8 +91,14 @@ class BenchmarkViewModel(
         scope.cancel()
     }
 
+    /** Builds the domain task matching the current UI selection. */
+    private fun buildTask(state: BenchmarkUiState): BenchmarkTask = when (state.selectedTaskId) {
+        ClassificationTask().id -> ClassificationTask()
+        else -> SuperResolutionTask(state.scale, state.inputSize, state.inputSize)
+    }
+
     private fun refreshEngines() {
-        val task = SuperResolutionTask(_state.value.scale, _state.value.inputSize, _state.value.inputSize)
+        val task = buildTask(_state.value)
         val engines = engineProvider.enginesFor(task)
             .map { EngineItem(it.id, it.displayName) }
         _state.update {

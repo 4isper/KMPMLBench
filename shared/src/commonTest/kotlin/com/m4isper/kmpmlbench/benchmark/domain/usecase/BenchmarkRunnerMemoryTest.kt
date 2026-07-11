@@ -4,7 +4,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
-import com.m4isper.kmpmlbench.benchmark.domain.model.QualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -20,7 +20,7 @@ class BenchmarkRunnerMemoryTest {
             input.width * 2,
             input.height * 2,
             ImageBuffer(input.width * 2, input.height * 2, IntArray((input.width * 2) * (input.height * 2))),
-            QualityMetrics(30.0, 0.9),
+            SrQualityMetrics(30.0, 0.9),
         )
         override fun close() {}
     }

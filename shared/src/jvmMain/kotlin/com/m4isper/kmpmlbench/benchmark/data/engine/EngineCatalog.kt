@@ -3,6 +3,7 @@ package com.m4isper.kmpmlbench.benchmark.data.engine
 import com.m4isper.kmpmlbench.benchmark.domain.engine.EngineProvider
 import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 
 /**
@@ -18,6 +19,7 @@ actual object EngineCatalog : EngineProvider {
             OnnxSuperResolutionEngine(task, executionProvider = "coreml"),
             MockSuperResolutionEngine(task),
         )
+        is ClassificationTask -> listOf(MockClassificationEngine(task))
         else -> emptyList()
     }
 }

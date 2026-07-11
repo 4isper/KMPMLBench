@@ -1,6 +1,7 @@
 package com.m4isper.kmpmlbench.benchmark.domain.usecase
 
 import com.m4isper.kmpmlbench.benchmark.data.engine.MockSuperResolutionEngine
+import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -28,9 +29,10 @@ class BenchmarkRunnerTest {
         assertTrue(result.metrics.throughputFps > 0.0, "throughput positive")
         assertEquals(task.inputWidth, result.input.width)
         assertEquals(task.inputHeight, result.input.height)
-        assertTrue(result.quality.psnr.isFinite(), "psnr finite")
-        assertTrue(result.quality.psnr > 0.0, "psnr positive")
-        assertTrue(result.quality.ssim > 0.0, "ssim positive")
-        assertTrue(result.quality.ssim <= 1.0, "ssim <= 1")
+        val q = result.quality as SrQualityMetrics
+        assertTrue(q.psnr.isFinite(), "psnr finite")
+        assertTrue(q.psnr > 0.0, "psnr positive")
+        assertTrue(q.ssim > 0.0, "ssim positive")
+        assertTrue(q.ssim <= 1.0, "ssim <= 1")
     }
 }

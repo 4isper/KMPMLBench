@@ -2,6 +2,7 @@ package com.m4isper.kmpmlbench.benchmark.data.engine
 
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
+import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,7 +40,7 @@ class EngineCatalogJvmTest {
         assertEquals(outCpu.height, outCore.height)
         assertEquals(task.outputWidth, outCpu.width)
         assertEquals(task.outputHeight, outCpu.height)
-        assertTrue(outCpu.quality.psnr.isFinite(), "cpu psnr finite")
-        assertTrue(outCore.quality.psnr.isFinite(), "coreml psnr finite")
+        assertTrue((outCpu.quality as SrQualityMetrics).psnr.isFinite(), "cpu psnr finite")
+        assertTrue((outCore.quality as SrQualityMetrics).psnr.isFinite(), "coreml psnr finite")
     }
 }

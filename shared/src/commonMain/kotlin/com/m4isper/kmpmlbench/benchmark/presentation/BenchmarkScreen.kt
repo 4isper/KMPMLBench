@@ -19,7 +19,10 @@ import com.m4isper.kmpmlbench.Greeting
 import com.m4isper.kmpmlbench.benchmark.data.engine.EngineCatalog
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.processing.downsample
+import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkRunner
+import com.m4isper.kmpmlbench.benchmark.presentation.ClassificationQualityUi
+import com.m4isper.kmpmlbench.benchmark.presentation.SrQualityUi
 
 @Composable
 fun BenchmarkScreen() {
@@ -57,22 +60,51 @@ fun BenchmarkScreen() {
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("Task: Super-Resolution", style = MaterialTheme.typography.titleMedium)
-                    LabeledRow("Upscale factor") {
-                        SegmentedChoice(
-                            options = listOf(2, 4),
-                            selected = uiState.scale,
-                            onSelect = viewModel::onScaleSelected,
-                            label = { "×$it" },
+                    Text("Task", style = MaterialTheme.typography.titleMedium)
+                    SegmentedChoice(
+                        options = listOf("super-resolution", ClassificationTask().id),
+                        selected = uiState.selectedTaskId,
+                        onSelect = viewModel::onTaskSelected,
+                        label = { if (it == ClassificationTask().id) "Classification" else "Super-Resolution" },
+                    )
+                }
+            }
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        if (uiState.selectedTaskId == ClassificationTask().id) {
+                            "Classification · ${ClassificationTask().displayName}"
+                        } else {
+                            "Super-Resolution"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    if (uiState.selectedTaskId == ClassificationTask().id) {
+                        Text(
+                            "Mock engine · 224×224 input · 10 synthetic classes",
+                            style = MaterialTheme.typography.bodySmall,
                         )
-                    }
-                    LabeledRow("Input size") {
-                        SegmentedChoice(
-                            options = listOf(64, 128, 256),
-                            selected = uiState.inputSize,
-                            onSelect = viewModel::onInputSizeSelected,
-                            label = { "${it}px" },
-                        )
+                    } else {
+                        LabeledRow("Upscale factor") {
+                            SegmentedChoice(
+                                options = listOf(2, 4),
+                                selected = uiState.scale,
+                                onSelect = viewModel::onScaleSelected,
+                                label = { "×$it" },
+                            )
+                        }
+                        LabeledRow("Input size") {
+                            SegmentedChoice(
+                                options = listOf(64, 128, 256),
+                                selected = uiState.inputSize,
+                                onSelect = viewModel::onInputSizeSelected,
+                                label = { "${it}px" },
+                            )
+                        }
                     }
                     var iterationsStr by remember { mutableStateOf(uiState.iterations.toString()) }
                     OutlinedTextField(
@@ -200,9 +232,21 @@ private fun ResultCard(result: BenchmarkResultUi) {
             MetricRow("p95 latency", "${result.p95LatencyMs.format(2)} ms")
             MetricRow("Throughput", "${result.throughputFps.format(1)} fps")
             MetricRow("Peak memory", "${result.peakMemoryMb.format(1)} MB")
-            MetricRow("PSNR", "${result.psnr.format(2)} dB")
-            MetricRow("SSIM", result.ssim.format(4))
             MetricRow("Iterations", "${result.iterations}")
+            when (val q = result.quality) {
+                is SrQualityUi -> {
+                    MetricRow("PSNR", "${q.psnr.format(2)} dB")
+                    MetricRow("SSIM", q.ssim.format(4))
+                }
+                is ClassificationQualityUi -> {
+                    MetricRow("Predicted", q.predictedClass)
+                    MetricRow("Confidence", q.confidence.format(4))
+                    MetricRow("Accuracy", q.accuracy.format(2))
+                    q.topK.forEachIndexed { i, (label, p) ->
+                        MetricRow("  top-${i + 1}", "$label · ${p.format(4)}")
+                    }
+                }
+            }
         }
     }
 }
@@ -221,7 +265,7 @@ private fun MetricRow(label: String, value: String) {
 @Composable
 private fun PreviewCard(
     inputImage: ImageBuffer,
-    outputImage: ImageBuffer,
+    outputImage: ImageBuffer?,
     outputWidth: Int,
     outputHeight: Int,
 ) {
@@ -237,22 +281,24 @@ private fun PreviewCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 PreviewImage(inputImage)
-                PreviewImage(outputImage)
+                outputImage?.let { PreviewImage(it) }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 Text(
-                    "LR ${inputImage.width}×${inputImage.height}",
+                    "Input ${inputImage.width}×${inputImage.height}",
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.weight(1f),
                 )
-                Text(
-                    "SR ${outputWidth}×$outputHeight",
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.weight(1f),
-                )
+                if (outputImage != null) {
+                    Text(
+                        "Output ${outputWidth}×$outputHeight",
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }

@@ -7,14 +7,16 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
-import com.m4isper.kmpmlbench.benchmark.domain.model.QualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 private class FakeEngine(
     override val id: String = "fake",
@@ -27,7 +29,7 @@ private class FakeEngine(
         input.width * 2,
         input.height * 2,
         ImageBuffer(input.width * 2, input.height * 2, IntArray((input.width * 2) * (input.height * 2))),
-        QualityMetrics(30.0, 0.9),
+        SrQualityMetrics(30.0, 0.9),
     )
     override fun close() { closed = true }
 }
@@ -59,7 +61,7 @@ private class FakeUseCase : BenchmarkUseCase {
                 64,
                 64,
                 ImageBuffer(64, 64, IntArray(4096)),
-                QualityMetrics(28.0, 0.85),
+                SrQualityMetrics(28.0, 0.85),
             ),
             metrics = BenchmarkMetrics(
                 initTimeMs = 10.0,
@@ -73,7 +75,7 @@ private class FakeUseCase : BenchmarkUseCase {
                 throughputFps = 500.0,
                 peakMemoryMb = 25.0,
             ),
-            quality = QualityMetrics(28.0, 0.85),
+            quality = SrQualityMetrics(28.0, 0.85),
         )
     }
 }
@@ -103,6 +105,15 @@ class BenchmarkViewModelTest {
     }
 
     @Test
+    fun taskSwitchUpdatesSelectedTask() {
+        val vm = BenchmarkViewModel(FakeUseCase(), FakeProvider(FakeEngine()))
+        assertEquals("super-resolution", vm.state.value.selectedTaskId)
+        vm.onTaskSelected(ClassificationTask().id)
+        assertEquals(ClassificationTask().id, vm.state.value.selectedTaskId)
+        vm.clear()
+    }
+
+    @Test
     fun runClickedInvokesUseCaseAndMapsResult() = runBlocking {
         val engine = FakeEngine()
         val useCase = FakeUseCase()
@@ -121,8 +132,9 @@ class BenchmarkViewModelTest {
         assertEquals("Super-Resolution ×2", result.taskName)
         assertEquals(64, result.outputWidth)
         assertEquals(32, result.inputImage.width)
-        assertEquals(28.0, result.psnr, 0.0)
-        assertEquals(0.85, result.ssim, 0.0)
+        assertTrue(result.quality is SrQualityUi)
+        assertEquals(28.0, result.quality.psnr, 0.0)
+        assertEquals(0.85, result.quality.ssim, 0.0)
         assertEquals(3.0, result.maxLatencyMs, 0.0)
         vm.clear()
     }

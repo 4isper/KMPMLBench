@@ -2,6 +2,7 @@ package com.m4isper.kmpmlbench.benchmark.data.engine
 
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
+import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,11 +21,12 @@ class MockSuperResolutionEngineTest {
 
         assertEquals(64, output.width)
         assertEquals(64, output.height)
-        assertTrue(output.quality.psnr.isFinite())
-        assertTrue(output.quality.psnr > 0.0)
-        assertTrue(output.quality.psnr < 100.0)
-        assertTrue(output.quality.ssim > 0.0)
-        assertTrue(output.quality.ssim <= 1.0)
+        val q = output.quality as SrQualityMetrics
+        assertTrue(q.psnr.isFinite())
+        assertTrue(q.psnr > 0.0)
+        assertTrue(q.psnr < 100.0)
+        assertTrue(q.ssim > 0.0)
+        assertTrue(q.ssim <= 1.0)
     }
 
     @Test

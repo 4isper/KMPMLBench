@@ -7,7 +7,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
-import com.m4isper.kmpmlbench.benchmark.domain.model.QualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.processing.computePsnr
 import com.m4isper.kmpmlbench.benchmark.domain.processing.computeSsim
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
@@ -100,7 +100,7 @@ class OnnxSuperResolutionEngine(
             // the low-res input was downsampled from), so PSNR/SSIM reflect how well
             // the model reconstructs the actual frame rather than a synthetic pattern.
             val gt = task.groundTruth()
-            val quality = QualityMetrics(
+            val quality = SrQualityMetrics(
                 psnr = computePsnr(gt, reconstructed),
                 ssim = computeSsim(gt, reconstructed),
             )
