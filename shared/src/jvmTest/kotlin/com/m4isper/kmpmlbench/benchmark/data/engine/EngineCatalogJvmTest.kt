@@ -3,6 +3,7 @@ package com.m4isper.kmpmlbench.benchmark.data.engine
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,6 +18,13 @@ class EngineCatalogJvmTest {
         assertTrue(engines.any { it.id == "onnx-sr" })
         assertTrue(engines.any { it.id == "onnx-coreml-sr" })
         assertTrue(engines.any { it.id == "mock-sr" })
+    }
+
+    @Test
+    fun classificationOffersOnnxAndMock() {
+        val engines = EngineCatalog.enginesFor(ClassificationTask())
+        assertEquals("onnx-cls", engines.first().id)
+        assertTrue(engines.any { it.id == "mock-cls" })
     }
 
     @Test

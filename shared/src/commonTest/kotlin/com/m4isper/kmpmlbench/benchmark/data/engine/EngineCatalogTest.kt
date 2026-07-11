@@ -19,9 +19,9 @@ class EngineCatalogTest {
     }
 
     @Test
-    fun classificationReturnsTheMockEngine() {
+    fun classificationRegistersMockEngine() {
         val engines = EngineCatalog.enginesFor(ClassificationTask())
-        assertEquals("mock-cls", engines.singleOrNull()?.id)
+        assertTrue(engines.any { it.id == "mock-cls" }, "mock classification engine must be registered")
     }
 
     @Test
