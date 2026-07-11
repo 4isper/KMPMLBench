@@ -49,6 +49,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
         }
+        jvmMain.dependencies {
+            implementation(libs.onnxruntime)
+        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
