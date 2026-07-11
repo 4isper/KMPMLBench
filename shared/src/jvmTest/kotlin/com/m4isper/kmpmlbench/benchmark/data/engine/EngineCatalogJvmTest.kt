@@ -1,6 +1,7 @@
 package com.m4isper.kmpmlbench.benchmark.data.engine
 
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
+import com.m4isper.kmpmlbench.benchmark.domain.model.ClassificationQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
@@ -21,9 +22,10 @@ class EngineCatalogJvmTest {
     }
 
     @Test
-    fun classificationOffersOnnxAndMock() {
+    fun classificationOffersOnnxCoreMlAndMock() {
         val engines = EngineCatalog.enginesFor(ClassificationTask())
         assertEquals("onnx-cls", engines.first().id)
+        assertTrue(engines.any { it.id == "onnx-cls-coreml" })
         assertTrue(engines.any { it.id == "mock-cls" })
     }
 
@@ -50,5 +52,30 @@ class EngineCatalogJvmTest {
         assertEquals(task.outputHeight, outCpu.height)
         assertTrue((outCpu.quality as SrQualityMetrics).psnr.isFinite(), "cpu psnr finite")
         assertTrue((outCore.quality as SrQualityMetrics).psnr.isFinite(), "coreml psnr finite")
+    }
+
+    @Test
+    fun onnxClassificationEnginesAgreeOnTopClass() {
+        // CPU and CoreML must classify the same frame to the same top-1 class so
+        // their latency/quality are directly comparable in the UI.
+        val task = ClassificationTask(inputWidth = 64, inputHeight = 64, numClasses = 10)
+        val input = task.createInput()
+
+        val cpu = OnnxClassificationEngine(task)
+        val coreml = OnnxClassificationEngine(task, executionProvider = "coreml")
+
+        cpu.initialize(); val outCpu = cpu.infer(input); cpu.close()
+        coreml.initialize(); val outCore = coreml.infer(input); coreml.close()
+
+        val qCpu = outCpu.quality as ClassificationQualityMetrics
+        val qCore = outCore.quality as ClassificationQualityMetrics
+        assertEquals(input.width, outCpu.width)
+        assertEquals(input.height, outCpu.height)
+        assertEquals(outCpu.width, outCore.width)
+        assertEquals(outCpu.height, outCore.height)
+        assertEquals(qCpu.predictedClass, qCore.predictedClass, "top-1 class must match across EPs")
+        assertEquals(5, qCpu.topK.size)
+        assertTrue(qCpu.confidence > 0.0 && qCpu.confidence <= 1.0, "cpu confidence in (0,1]")
+        assertTrue(qCore.confidence > 0.0 && qCore.confidence <= 1.0, "coreml confidence in (0,1]")
     }
 }

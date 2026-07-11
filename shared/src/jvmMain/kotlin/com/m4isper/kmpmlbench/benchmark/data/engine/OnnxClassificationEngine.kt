@@ -21,15 +21,21 @@ import java.nio.FloatBuffer
  * 1000-class logits are softmaxed into per-class probabilities. The top class
  * and its confidence are reported; accuracy is scored against the task's
  * (synthetic) input label so it stays comparable to the mock engine.
+ *
+ * The engine can optionally run on the CoreML execution provider (Apple
+ * Neural Engine / GPU) instead of the default CPU provider, so the benchmark UI
+ * can compare the two execution paths on the same model.
  */
 class OnnxClassificationEngine(
     private val task: ClassificationTask,
     private val modelResourcePath: String = "models/mobilenetv2-12.onnx",
     private val labelsResourcePath: String = "models/imagenet_classes.txt",
     private val inputSize: Int = 224,
+    private val executionProvider: String = "cpu",
 ) : MlEngine {
-    override val id: String = "onnx-cls"
-    override val displayName: String = "ONNX Classification (MobileNetV2)"
+    override val id: String = if (executionProvider == "coreml") "onnx-cls-coreml" else "onnx-cls"
+    override val displayName: String =
+        "ONNX Classification (MobileNetV2)" + if (executionProvider == "coreml") " · CoreML" else ""
 
     private val env = OrtEnvironment.getEnvironment()
     private var session: OrtSession? = null
@@ -39,7 +45,9 @@ class OnnxClassificationEngine(
         val modelBytes = checkNotNull(
             javaClass.classLoader.getResourceAsStream(modelResourcePath),
         ) { "ONNX model resource not found on classpath: $modelResourcePath" }.use { it.readBytes() }
-        session = env.createSession(modelBytes, OrtSession.SessionOptions())
+        val options = OrtSession.SessionOptions()
+        if (executionProvider == "coreml") options.addCoreML()
+        session = env.createSession(modelBytes, options)
 
         labels = javaClass.classLoader.getResourceAsStream(labelsResourcePath)
             ?.bufferedReader()

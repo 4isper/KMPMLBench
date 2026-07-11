@@ -19,7 +19,11 @@ actual object EngineCatalog : EngineProvider {
             OnnxSuperResolutionEngine(task, executionProvider = "coreml"),
             MockSuperResolutionEngine(task),
         )
-        is ClassificationTask -> listOf(OnnxClassificationEngine(task), MockClassificationEngine(task))
+        is ClassificationTask -> listOf(
+            OnnxClassificationEngine(task),
+            OnnxClassificationEngine(task, executionProvider = "coreml"),
+            MockClassificationEngine(task),
+        )
         else -> emptyList()
     }
 }
