@@ -59,8 +59,8 @@ class OnnxSuperResolutionEngine(
         val sess = checkNotNull(session) { "ONNX engine not initialized" }
         val inW = MODEL_INPUT_SIZE
         val inH = MODEL_INPUT_SIZE
-        val outW = inW * scale
-        val outH = inH * scale
+        val modelOutW = inW * scale
+        val modelOutH = inH * scale
         // The model requires a fixed 224x224 input, so the (arbitrary) LR frame
         // is bilinearly resized to fit before preprocessing.
         val lr = resizeBilinear(input.image, inW, inH)
@@ -76,24 +76,33 @@ class OnnxSuperResolutionEngine(
         try {
             @Suppress("UNCHECKED_CAST")
             val out = (result.get(outputName).orElseThrow().value as Array<Array<Array<FloatArray>>>)[0][0]
-            val yOut = FloatArray(outW * outH)
-            for (j in 0 until outH) for (i in 0 until outW) {
-                yOut[j * outW + i] = (out[j][i] * 255f).coerceIn(0f, 255f)
+            val yOut = FloatArray(modelOutW * modelOutH)
+            for (j in 0 until modelOutH) for (i in 0 until modelOutW) {
+                yOut[j * modelOutW + i] = (out[j][i] * 255f).coerceIn(0f, 255f)
             }
             val cbUp = upscaleChannel(cb, inW, inH, scale)
             val crUp = upscaleChannel(cr, inW, inH, scale)
-            val reconstructed = ycbcrToArgb(yOut, cbUp, crUp, outW, outH)
+            val modelOut = ycbcrToArgb(yOut, cbUp, crUp, modelOutW, modelOutH)
+
+            // The model is fixed at 224x224 in / 672x672 (x3) out, but a benchmark
+            // task may request a different resolution. Resize the model output to
+            // the task's requested size so the result is directly comparable to
+            // other engines and to the UI-selected task.
+            val outW = task.outputWidth
+            val outH = task.outputHeight
+            val reconstructed = if (modelOutW == outW && modelOutH == outH) {
+                modelOut
+            } else {
+                resizeBilinear(modelOut, outW, outH)
+            }
 
             // Quality is scored against the task's ground truth (the same HR image
-            // the low-res input was downsampled from), so PSNR/SSIM reflect how
-            // well the model reconstructs the actual frame rather than a synthetic
-            // pattern. The model is fixed at 672x672 out, so the GT is rescaled to
-            // match when the task requests a different output resolution.
+            // the low-res input was downsampled from), so PSNR/SSIM reflect how well
+            // the model reconstructs the actual frame rather than a synthetic pattern.
             val gt = task.groundTruth()
-            val gtScaled = if (gt.width == outW && gt.height == outH) gt else resizeBilinear(gt, outW, outH)
             val quality = QualityMetrics(
-                psnr = computePsnr(gtScaled, reconstructed),
-                ssim = computeSsim(gtScaled, reconstructed),
+                psnr = computePsnr(gt, reconstructed),
+                ssim = computeSsim(gt, reconstructed),
             )
             return BenchmarkOutput(outW, outH, reconstructed, quality)
         } finally {

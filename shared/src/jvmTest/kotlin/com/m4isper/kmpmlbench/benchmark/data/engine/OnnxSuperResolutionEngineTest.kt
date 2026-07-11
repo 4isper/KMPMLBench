@@ -29,9 +29,10 @@ class OnnxSuperResolutionEngineTest {
         val output = engine.infer(lr)
         engine.close()
 
-        // The ONNX model is fixed at 224x224 in, 672x672 (×3) out.
-        assertEquals(672, output.width)
-        assertEquals(672, output.height)
+        // The model is fixed at 224x224 in / 672x672 (x3) out; the engine rescales
+        // the result to the task's requested resolution.
+        assertEquals(task.outputWidth, output.width)
+        assertEquals(task.outputHeight, output.height)
         assertTrue(output.quality.psnr.isFinite(), "psnr finite")
         assertTrue(output.quality.psnr > 0.0, "psnr positive")
         assertTrue(output.quality.psnr <= 100.0, "psnr capped")

@@ -20,7 +20,7 @@ The ML landscape is fragmented. Developers often struggle to decide which engine
 ## 🧠 Benchmarking Tasks
 While the project started with **Super-Resolution**, it is designed to be modular:
 
-- [x] **Super-Resolution:** ESPCN, FSRCNN, Real-ESRGAN — *working harness with a mock engine plus two real Desktop/JVM engines for side-by-side comparison: **ONNX Runtime** (Sub-Pixel CNN ×3, `super-resolution-10.onnx`) offered twice — once on the default CPU execution provider and once on the **CoreML** execution provider (Apple Neural Engine / GPU, on macOS) — so the UI can compare engine/latency trade-offs on the same model*.
+- [x] **Super-Resolution:** ESPCN, FSRCNN, Real-ESRGAN — *working harness with a mock engine plus two real Desktop/JVM engines for side-by-side comparison: **ONNX Runtime** (Sub-Pixel CNN ×3, `super-resolution-10.onnx`) offered twice — once on the default CPU execution provider and once on the **CoreML** execution provider (Apple Neural Engine / GPU, on macOS) — so the UI can compare engine/latency trade-offs on the same model. The ×3 model output is rescaled to the selected task resolution so both providers stay directly comparable*.
 - [ ] **Image Classification:** MobileNetV3, EfficientNet (Planned).
 - [ ] **Object Detection:** YOLOv8-Nano (Planned).
 - [ ] **On-device LLM:** Gemma 2B / Phi-2 (Experimental via ExecuTorch).
