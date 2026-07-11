@@ -29,6 +29,10 @@ import kotlin.math.exp
  * the confidence threshold are dropped, and greedy NMS removes duplicates. The
  * surviving detections are scored with mAP@0.5 against the task's synthetic
  * ground-truth boxes and drawn onto the output frame.
+ *
+ * The engine can optionally run on the CoreML execution provider (Apple
+ * Neural Engine / GPU) instead of the default CPU provider, so the benchmark UI
+ * can compare the two execution paths on the same model.
  */
 class OnnxObjectDetectionEngine(
     private val task: ObjectDetectionTask,
@@ -37,9 +41,11 @@ class OnnxObjectDetectionEngine(
     private val modelInputSize: Int = 640,
     private val confidenceThreshold: Float = 0.25f,
     private val nmsThreshold: Float = 0.45f,
+    private val executionProvider: String = "cpu",
 ) : MlEngine {
-    override val id: String = "onnx-od"
-    override val displayName: String = "ONNX Detection (YOLOv8n)"
+    override val id: String = if (executionProvider == "coreml") "onnx-od-coreml" else "onnx-od"
+    override val displayName: String =
+        "ONNX Detection (YOLOv8n)" + if (executionProvider == "coreml") " · CoreML" else ""
 
     private val env = OrtEnvironment.getEnvironment()
     private var session: OrtSession? = null
@@ -49,7 +55,9 @@ class OnnxObjectDetectionEngine(
         val modelBytes = checkNotNull(
             javaClass.classLoader.getResourceAsStream(modelResourcePath),
         ) { "ONNX model resource not found on classpath: $modelResourcePath" }.use { it.readBytes() }
-        session = env.createSession(modelBytes, OrtSession.SessionOptions())
+        val options = OrtSession.SessionOptions()
+        if (executionProvider == "coreml") options.addCoreML()
+        session = env.createSession(modelBytes, options)
         labels = javaClass.classLoader.getResourceAsStream(labelsResourcePath)
             ?.bufferedReader()
             ?.use { it.readLines() }

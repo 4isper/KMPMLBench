@@ -27,6 +27,7 @@ actual object EngineCatalog : EngineProvider {
         )
         is ObjectDetectionTask -> listOf(
             OnnxObjectDetectionEngine(task),
+            OnnxObjectDetectionEngine(task, executionProvider = "coreml"),
             MockObjectDetectionEngine(task),
         )
         else -> emptyList()
