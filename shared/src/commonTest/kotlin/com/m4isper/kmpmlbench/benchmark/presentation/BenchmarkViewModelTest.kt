@@ -5,6 +5,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
+import com.m4isper.kmpmlbench.benchmark.domain.model.ClassificationQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
@@ -12,6 +13,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
+import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkRunner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -54,6 +56,7 @@ private class FakeUseCase : BenchmarkUseCase {
         task: BenchmarkTask,
         iterations: Int,
         warmup: Int,
+        customInput: BenchmarkInput?,
         onProgress: (Int, Int) -> Unit,
     ): BenchmarkResult {
         runCalls++
@@ -183,5 +186,53 @@ class BenchmarkViewModelTest {
         vm.onMaxNewTokensSelected(96)
         assertEquals(96, vm.state.value.maxNewTokens)
         vm.clear()
+    }
+}
+
+/** Verifies the runner honors a user-supplied (custom) input and flags the result as custom. */
+private class InputRecordingEngine : MlEngine {
+    var lastInput: BenchmarkInput? = null
+    override val id = "rec"
+    override val displayName = "Recorder"
+    override fun initialize() {}
+    override fun infer(input: BenchmarkInput): BenchmarkOutput {
+        lastInput = input
+        return BenchmarkOutput(
+            input.width,
+            input.height,
+            input.image,
+            ClassificationQualityMetrics("x", 0.9, listOf("x" to 0.9), 1.0),
+        )
+    }
+    override fun close() {}
+}
+
+class BenchmarkRunnerCustomInputTest {
+    @Test
+    fun customInputOverridesTaskInputAndMarksResultCustom() = runBlocking {
+        val runner = BenchmarkRunner()
+        val engine = InputRecordingEngine()
+        val task = ClassificationTask()
+        val customImg = ImageBuffer(7, 7, IntArray(49) { 0xFF123456.toInt() })
+        val custom = BenchmarkInput(7, 7, "(custom)", customImg, isCustom = true)
+
+        val result = runner.run(engine, task, iterations = 3, warmup = 1, customInput = custom)
+
+        assertTrue(result.isCustom)
+        assertEquals(customImg, result.input.image)
+        assertEquals(customImg, engine.lastInput?.image)
+        assertEquals("(custom)", engine.lastInput?.label)
+    }
+
+    @Test
+    fun nullCustomInputFallsBackToTaskInput() = runBlocking {
+        val runner = BenchmarkRunner()
+        val engine = InputRecordingEngine()
+        val task = ClassificationTask()
+
+        val result = runner.run(engine, task, iterations = 2, warmup = 1, customInput = null)
+
+        assertTrue(!result.isCustom)
+        assertEquals(task.createInput().image.width, engine.lastInput?.image?.width)
     }
 }

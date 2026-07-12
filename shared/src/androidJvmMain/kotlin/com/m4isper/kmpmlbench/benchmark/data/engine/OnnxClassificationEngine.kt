@@ -90,7 +90,8 @@ class OnnxClassificationEngine(
             val top = ranked.first()
             val predicted = labels.getOrNull(top.index) ?: "class-${top.index}"
             val topK = ranked.map { (labels.getOrNull(it.index) ?: "class-${it.index}") to it.value }
-            val accuracy = if (topK.any { it.first == input.label }) 1.0 else 0.0
+            // A user-supplied image has no ground-truth label, so accuracy is undefined (0 here).
+            val accuracy = if (input.isCustom) 0.0 else if (topK.any { it.first == input.label }) 1.0 else 0.0
 
             return BenchmarkOutput(
                 width = input.width,

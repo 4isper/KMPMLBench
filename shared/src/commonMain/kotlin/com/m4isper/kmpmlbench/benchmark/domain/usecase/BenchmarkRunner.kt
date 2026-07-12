@@ -1,6 +1,7 @@
 package com.m4isper.kmpmlbench.benchmark.domain.usecase
 
 import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
+import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
@@ -23,12 +24,13 @@ class BenchmarkRunner : BenchmarkUseCase {
         task: BenchmarkTask,
         iterations: Int,
         warmup: Int,
+        customInput: BenchmarkInput?,
         onProgress: (done: Int, total: Int) -> Unit,
     ): BenchmarkResult = withContext(Dispatchers.Default) {
         val initTimeMs = measureMs { engine.initialize() }
         var peakMemoryMb = currentMemoryUsageMb()
 
-        val input = task.createInput()
+        val input = customInput ?: task.createInput()
 
         var warmupMs: Double? = null
         repeat(warmup) {
@@ -61,6 +63,7 @@ class BenchmarkRunner : BenchmarkUseCase {
             output = output,
             metrics = metrics,
             quality = quality,
+            isCustom = input.isCustom,
         )
     }
 

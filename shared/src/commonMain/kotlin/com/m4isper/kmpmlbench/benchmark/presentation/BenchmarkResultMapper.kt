@@ -28,6 +28,7 @@ fun BenchmarkResult.toUi(): BenchmarkResultUi = BenchmarkResultUi(
     throughputFps = metrics.throughputFps,
     peakMemoryMb = metrics.peakMemoryMb,
     iterations = metrics.iterations,
+    isCustom = isCustom,
 )
 
 /** Maps the sealed domain quality into the sealed UI quality. */

@@ -127,7 +127,8 @@ class OnnxObjectDetectionEngine(
             }
 
             val kept = nms(detections, nmsThreshold)
-            val mAP = evaluateDetections(kept, task.groundTruthBoxes())
+            // A user-supplied image has no ground-truth boxes; mAP is undefined (-1).
+            val mAP = if (input.isCustom) -1.0 else evaluateDetections(kept, task.groundTruthBoxes())
             val meanConfidence = if (kept.isEmpty()) 0.0 else kept.map { it.confidence }.average()
             val quality = DetectionQualityMetrics(
                 numDetections = kept.size,

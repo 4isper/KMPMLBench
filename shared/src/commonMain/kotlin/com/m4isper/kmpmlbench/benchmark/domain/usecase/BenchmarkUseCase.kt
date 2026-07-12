@@ -1,6 +1,7 @@
 package com.m4isper.kmpmlbench.benchmark.domain.usecase
 
 import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
+import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 
@@ -17,6 +18,7 @@ interface BenchmarkUseCase {
         task: BenchmarkTask,
         iterations: Int,
         warmup: Int = 3,
+        customInput: BenchmarkInput? = null,
         onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
     ): BenchmarkResult
 }

@@ -177,6 +177,54 @@ fun BenchmarkScreen() {
                 }
             }
 
+            if (uiState.selectedTaskId != LlmTask().id) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text("Input image", style = MaterialTheme.typography.titleMedium)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Button(
+                                onClick = viewModel::onPickImage,
+                                enabled = !uiState.isRunning,
+                            ) {
+                                Text(
+                                    if (uiState.customImagePath == null) "Load your image…"
+                                    else "Replace image…",
+                                )
+                            }
+                            if (uiState.customImagePath != null) {
+                                Spacer(Modifier.width(8.dp))
+                                OutlinedButton(onClick = viewModel::onClearImage) {
+                                    Text("Reset")
+                                }
+                            }
+                        }
+                        uiState.customImage?.let { img ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                PreviewImage(img, maxDim = 48)
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text(
+                                        "${img.width}×${img.height}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                    Text(
+                                        "Своя картинка · GT отсутствует, метрики качества н/д",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Button(
                 onClick = viewModel::onRunClicked,
                 enabled = !uiState.isRunning,
@@ -281,6 +329,14 @@ private fun ResultCard(result: BenchmarkResultUi) {
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(Modifier.height(8.dp))
+            if (result.isCustom) {
+                Text(
+                    "Своя картинка · GT отсутствует, метрики качества н/д",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+            }
             MetricRow("Output", "${result.outputWidth}×${result.outputHeight}")
             MetricRow("Init time", "${result.initTimeMs.format(1)} ms")
             MetricRow("Avg latency", "${result.avgLatencyMs.format(2)} ms")
@@ -292,13 +348,13 @@ private fun ResultCard(result: BenchmarkResultUi) {
             MetricRow("Iterations", "${result.iterations}")
             when (val q = result.quality) {
                 is SrQualityUi -> {
-                    MetricRow("PSNR", "${q.psnr.format(2)} dB")
-                    MetricRow("SSIM", q.ssim.format(4))
+                    MetricRow("PSNR", if (q.psnr < 0) "н/д" else "${q.psnr.format(2)} dB")
+                    MetricRow("SSIM", if (q.ssim < 0) "н/д" else q.ssim.format(4))
                 }
                 is ClassificationQualityUi -> {
                     MetricRow("Predicted", q.predictedClass)
                     MetricRow("Confidence", q.confidence.format(4))
-                    MetricRow("Accuracy", q.accuracy.format(2))
+                    MetricRow("Accuracy", if (result.isCustom) "н/д (нет GT)" else q.accuracy.format(2))
                     q.topK.forEachIndexed { i, (label, p) ->
                         MetricRow("  top-${i + 1}", "$label · ${p.format(4)}")
                     }
@@ -306,7 +362,7 @@ private fun ResultCard(result: BenchmarkResultUi) {
                 is DetectionQualityUi -> {
                     MetricRow("Detections", "${q.numDetections}")
                     MetricRow("Mean confidence", q.meanConfidence.format(4))
-                    MetricRow("mAP@0.5", q.mAP.format(4))
+                    MetricRow("mAP@0.5", if (q.mAP < 0) "н/д" else q.mAP.format(4))
                 }
                 is LlmQualityUi -> {
                     MetricRow("Tokens / sec", "${q.tokensPerSecond.format(1)} tok/s")
@@ -394,21 +450,23 @@ private fun ComparisonCard(results: List<BenchmarkResultUi>) {
             BarChart("Throughput (fps, higher is better)", results.map { it.engineName to it.throughputFps }) { it.format(1) }
             BarChart("Peak memory (MB)", results.map { it.engineName to it.peakMemoryMb }) { it.format(1) }
 
-            when (results.first().quality) {
-                is SrQualityUi -> {
-                    BarChart("PSNR (dB, higher is better)", results.map { it.engineName to (it.quality as SrQualityUi).psnr }) { it.format(2) }
-                    BarChart("SSIM (higher is better)", results.map { it.engineName to (it.quality as SrQualityUi).ssim }) { it.format(4) }
-                }
-                is ClassificationQualityUi -> {
-                    BarChart("Accuracy (higher is better)", results.map { it.engineName to (it.quality as ClassificationQualityUi).accuracy }) { it.format(2) }
-                }
-                is DetectionQualityUi -> {
-                    BarChart("mAP@0.5 (higher is better)", results.map { it.engineName to (it.quality as DetectionQualityUi).mAP }) { it.format(4) }
-                    BarChart("Detections", results.map { it.engineName to (it.quality as DetectionQualityUi).numDetections.toDouble() }) { it.format(0) }
-                }
-                is LlmQualityUi -> {
-                    BarChart("Tokens / sec (higher is better)", results.map { it.engineName to (it.quality as LlmQualityUi).tokensPerSecond }) { it.format(1) }
-                    BarChart("First-token latency (ms, lower is better)", results.map { it.engineName to ((it.quality as LlmQualityUi).firstTokenLatencyMs?.toDouble() ?: 0.0) }) { it.format(0) }
+            if (!results.first().isCustom) {
+                when (results.first().quality) {
+                    is SrQualityUi -> {
+                        BarChart("PSNR (dB, higher is better)", results.map { it.engineName to (it.quality as SrQualityUi).psnr }) { it.format(2) }
+                        BarChart("SSIM (higher is better)", results.map { it.engineName to (it.quality as SrQualityUi).ssim }) { it.format(4) }
+                    }
+                    is ClassificationQualityUi -> {
+                        BarChart("Accuracy (higher is better)", results.map { it.engineName to (it.quality as ClassificationQualityUi).accuracy }) { it.format(2) }
+                    }
+                    is DetectionQualityUi -> {
+                        BarChart("mAP@0.5 (higher is better)", results.map { it.engineName to (it.quality as DetectionQualityUi).mAP }) { it.format(4) }
+                        BarChart("Detections", results.map { it.engineName to (it.quality as DetectionQualityUi).numDetections.toDouble() }) { it.format(0) }
+                    }
+                    is LlmQualityUi -> {
+                        BarChart("Tokens / sec (higher is better)", results.map { it.engineName to (it.quality as LlmQualityUi).tokensPerSecond }) { it.format(1) }
+                        BarChart("First-token latency (ms, lower is better)", results.map { it.engineName to ((it.quality as LlmQualityUi).firstTokenLatencyMs?.toDouble() ?: 0.0) }) { it.format(0) }
+                    }
                 }
             }
         }

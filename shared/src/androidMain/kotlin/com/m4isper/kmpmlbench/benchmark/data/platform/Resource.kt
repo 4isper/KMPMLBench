@@ -23,6 +23,22 @@ actual fun loadImageBuffer(path: String): ImageBuffer {
     return ImageBuffer(bitmap.width, bitmap.height, pixels)
 }
 
+actual fun loadImageFile(path: String): ImageBuffer {
+    val ctx = currentApplication()
+        ?: throw IllegalStateException("No context available to load image: $path")
+    val bitmap = if (path.startsWith("content://") || path.startsWith("file://")) {
+        ctx.contentResolver.openInputStream(android.net.Uri.parse(path))?.use {
+            android.graphics.BitmapFactory.decodeStream(it)
+        }
+    } else {
+        android.graphics.BitmapFactory.decodeFile(path)
+    } ?: throw IllegalStateException("Failed to decode image file: $path")
+    val pixels = IntArray(bitmap.width * bitmap.height)
+    bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+    bitmap.recycle()
+    return ImageBuffer(bitmap.width, bitmap.height, pixels)
+}
+
 /**
  * Resolves the running [Context] without referencing the hidden
  * `android.app.ActivityThread` class at compile time. The class is always

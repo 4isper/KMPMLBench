@@ -11,4 +11,6 @@ data class BenchmarkInput(
     val label: String,
     val image: ImageBuffer,
     val prompt: String? = null,
+    /** True when the image was supplied by the user (no ground-truth available). */
+    val isCustom: Boolean = false,
 )

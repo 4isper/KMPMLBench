@@ -67,8 +67,12 @@ actual fun loadImageBuffer(path: String): ImageBuffer {
     return generateSyntheticImage(224, 224)
 }
 
+actual fun loadImageFile(path: String): ImageBuffer {
+    return decodeImageToArgb(path) ?: generateSyntheticImage(224, 224)
+}
+
 /** Decodes a bundled JPEG/PNG file into an ARGB [ImageBuffer] via UIKit. */
-private fun decodeImageToArgb(path: String): ImageBuffer? {
+internal fun decodeImageToArgb(path: String): ImageBuffer? {
     val uiImage = UIImage(contentsOfFile = path) ?: return null
     val cg = uiImage.CGImage ?: return null
     val w = CGImageGetWidth(cg).toInt()

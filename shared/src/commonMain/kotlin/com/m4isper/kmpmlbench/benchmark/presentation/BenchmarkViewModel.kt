@@ -1,12 +1,15 @@
 package com.m4isper.kmpmlbench.benchmark.presentation
 
 import com.m4isper.kmpmlbench.benchmark.domain.engine.EngineProvider
+import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
+import com.m4isper.kmpmlbench.benchmark.data.platform.loadImageFile
+import com.m4isper.kmpmlbench.benchmark.data.platform.pickImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +70,29 @@ class BenchmarkViewModel(
         _state.update { it.copy(selectedEngineId = engineId) }
     }
 
+    /**
+     * Opens the platform image picker (desktop/Android) and decodes the chosen
+     * file into an [ImageBuffer] for use as a custom benchmark input. Image-only
+     * tasks (classification, detection, super-resolution) honor the custom image;
+     * language tasks ignore it. iOS currently returns null (picker not wired yet).
+     */
+    fun onPickImage() {
+        val current = _state.value
+        if (current.isRunning) return
+        if (current.selectedTaskId == LlmTask().id) return
+
+        scope.launch {
+            val path = pickImage() ?: return@launch
+            val decoded = runCatching { loadImageFile(path) }.getOrNull() ?: return@launch
+            _state.update { it.copy(customImagePath = path, customImage = decoded) }
+        }
+    }
+
+    /** Clears a previously loaded custom image, reverting to the bundled input. */
+    fun onClearImage() {
+        _state.update { it.copy(customImagePath = null, customImage = null) }
+    }
+
     fun onRunClicked() {
         val current = _state.value
         if (current.isRunning || current.selectedEngineId == null) return
@@ -83,6 +109,7 @@ class BenchmarkViewModel(
                 task = task,
                 iterations = current.iterations,
                 warmup = 3,
+                customInput = customInputOrNull(task),
             ) { done, total ->
                 _state.update { it.copy(progress = if (total > 0) done.toFloat() / total else 0f) }
             }
@@ -120,6 +147,7 @@ class BenchmarkViewModel(
                     task = task,
                     iterations = current.iterations,
                     warmup = 3,
+                    customInput = customInputOrNull(task),
                 ) { _, _ -> }
                 _state.update { it.copy(comparisonProgress = (index + 1).toFloat() / engines.size) }
                 result.toUi()
@@ -148,6 +176,24 @@ class BenchmarkViewModel(
             maxNewTokens = state.maxNewTokens,
         )
         else -> SuperResolutionTask(state.scale, state.inputSize, state.inputSize)
+    }
+
+    /**
+     * Builds a custom [BenchmarkInput] from the user-supplied image when one is
+     * loaded and the current task is image-based. Language tasks never receive a
+     * custom image. The image is passed at its native size; each engine resizes
+     * it to its model input internally.
+     */
+    private fun customInputOrNull(task: BenchmarkTask): BenchmarkInput? {
+        val img = _state.value.customImage ?: return null
+        if (task is LlmTask) return null
+        return BenchmarkInput(
+            width = img.width,
+            height = img.height,
+            label = "(custom)",
+            image = img,
+            isCustom = true,
+        )
     }
 
     private fun refreshEngines() {

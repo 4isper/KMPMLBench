@@ -107,11 +107,16 @@ class OnnxSuperResolutionEngine(
             // Quality is scored against the task's ground truth (the same HR image
             // the low-res input was downsampled from), so PSNR/SSIM reflect how well
             // the model reconstructs the actual frame rather than a synthetic pattern.
-            val gt = task.groundTruth()
-            val quality = SrQualityMetrics(
-                psnr = computePsnr(gt, reconstructed),
-                ssim = computeSsim(gt, reconstructed),
-            )
+            // A user-supplied image has no ground truth, so PSNR/SSIM are undefined (-1).
+            val quality = if (input.isCustom) {
+                SrQualityMetrics(psnr = -1.0, ssim = -1.0)
+            } else {
+                val gt = task.groundTruth()
+                SrQualityMetrics(
+                    psnr = computePsnr(gt, reconstructed),
+                    ssim = computeSsim(gt, reconstructed),
+                )
+            }
             return BenchmarkOutput(outW, outH, reconstructed, quality)
         } finally {
             result.close()

@@ -11,4 +11,6 @@ data class BenchmarkResult(
     val output: BenchmarkOutput,
     val metrics: BenchmarkMetrics,
     val quality: QualityMetrics,
+    /** True when the run used a user-supplied image (no ground-truth to score against). */
+    val isCustom: Boolean = false,
 )

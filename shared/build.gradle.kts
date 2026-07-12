@@ -76,6 +76,7 @@ kotlin {
             dependencies {
                 implementation(libs.onnxruntime.android)
                 implementation(libs.litert)
+                implementation(libs.androidx.activity.compose)
             }
         }
         commonTest.dependencies {

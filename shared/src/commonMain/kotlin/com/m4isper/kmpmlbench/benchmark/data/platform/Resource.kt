@@ -19,3 +19,11 @@ expect fun loadModelBytes(path: String): ByteArray
  * platform-specific: BitmapFactory on Android, ImageIO on the JVM.
  */
 expect fun loadImageBuffer(path: String): ImageBuffer
+
+/**
+ * Decodes an arbitrary user-selected image **file** (not a bundled resource)
+ * into an ARGB [ImageBuffer]. Used when the UI lets the user benchmark their
+ * own photo. Decoding is platform-specific: BitmapFactory on Android, ImageIO
+ * on the JVM, UIKit on iOS.
+ */
+expect fun loadImageFile(path: String): ImageBuffer

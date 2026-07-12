@@ -52,6 +52,8 @@ data class BenchmarkResultUi(
     val throughputFps: Double,
     val peakMemoryMb: Double,
     val iterations: Int,
+    /** True when the run used a user-supplied image (no ground-truth to score against). */
+    val isCustom: Boolean = false,
 )
 
 data class BenchmarkUiState(
@@ -66,6 +68,10 @@ data class BenchmarkUiState(
     val isRunning: Boolean = false,
     val progress: Float = 0f,
     val result: BenchmarkResultUi? = null,
+    /** User-supplied image path (file/content URI), or null if using the bundled input. */
+    val customImagePath: String? = null,
+    /** Decoded pixels of the user-supplied image, or null. Mirrors [customImagePath]. */
+    val customImage: ImageBuffer? = null,
     /** Results of a multi-engine comparison run, or null if not compared yet. */
     val comparison: List<BenchmarkResultUi>? = null,
     val comparisonProgress: Float = 0f,
