@@ -36,6 +36,7 @@ actual fun platformEnginesFor(
     is ObjectDetectionTask -> listOf(
         OnnxObjectDetectionEngine(task, customModelPath = customModelPath, customLabelsPath = customLabelsPath),
         OnnxObjectDetectionEngine(task, executionProvider = "nnapi", customModelPath = customModelPath, customLabelsPath = customLabelsPath),
+        NcnnObjectDetectionEngine(task),
         MockObjectDetectionEngine(task),
     )
     is LlmTask -> buildList {
