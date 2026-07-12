@@ -23,6 +23,7 @@ actual fun platformEnginesFor(
     is SuperResolutionTask -> listOf(
         OnnxSuperResolutionEngine(task, customModelPath = customModelPath),
         OnnxSuperResolutionEngine(task, executionProvider = "nnapi", customModelPath = customModelPath),
+        NcnnSuperResolutionEngine(task),
         MockSuperResolutionEngine(task),
     )
     is ClassificationTask -> listOf(
