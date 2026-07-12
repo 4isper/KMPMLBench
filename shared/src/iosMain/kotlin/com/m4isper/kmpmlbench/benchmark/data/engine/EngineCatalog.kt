@@ -13,13 +13,22 @@ import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
  * (Objective-C API, `onnxruntime-objc`) on-device; Super-Resolution and
  * Classification remain mock-only until their native engines are ported.
  */
-actual fun platformEnginesFor(task: BenchmarkTask): List<MlEngine> = when (task) {
-    is SuperResolutionTask -> listOf(MockSuperResolutionEngine(task))
-    is ClassificationTask -> listOf(MockClassificationEngine(task))
-    is ObjectDetectionTask -> listOf(
-        OnnxObjectDetectionEngineIos(task),
-        MockObjectDetectionEngine(task),
-    )
-    is LlmTask -> listOf(MockLlmEngine(task))
-    else -> emptyList()
+actual fun platformEnginesFor(
+    task: BenchmarkTask,
+    customModelPath: String?,
+    customLabelsPath: String?,
+): List<MlEngine> {
+    // Custom user models are not wired into the iOS engines yet (iOS build is
+    // currently deferred); the parameters are accepted to keep the expect/actual
+    // contract consistent across targets.
+    return when (task) {
+        is SuperResolutionTask -> listOf(MockSuperResolutionEngine(task))
+        is ClassificationTask -> listOf(MockClassificationEngine(task))
+        is ObjectDetectionTask -> listOf(
+            OnnxObjectDetectionEngineIos(task),
+            MockObjectDetectionEngine(task),
+        )
+        is LlmTask -> listOf(MockLlmEngine(task))
+        else -> emptyList()
+    }
 }

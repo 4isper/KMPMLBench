@@ -9,6 +9,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
 import com.m4isper.kmpmlbench.benchmark.data.platform.loadImageFile
+import com.m4isper.kmpmlbench.benchmark.data.platform.pickFile
 import com.m4isper.kmpmlbench.benchmark.data.platform.pickImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -40,7 +41,8 @@ class BenchmarkViewModel(
 
     fun onTaskSelected(taskId: String) {
         if (taskId == _state.value.selectedTaskId) return
-        _state.update { it.copy(selectedTaskId = taskId) }
+        // A custom model/labels file is task-specific, so drop it on task switch.
+        _state.update { it.copy(selectedTaskId = taskId, customModelPath = null, customLabelsPath = null) }
         refreshEngines()
     }
 
@@ -93,12 +95,48 @@ class BenchmarkViewModel(
         _state.update { it.copy(customImagePath = null, customImage = null) }
     }
 
+    /**
+     * Opens the platform file picker for `.onnx` and stores the chosen model
+     * path. The next [runBenchmark] run passes it to the ONNX engines so they
+     * load the user's model instead of the bundled one.
+     */
+    fun onPickModel() {
+        val current = _state.value
+        if (current.isRunning) return
+        if (current.selectedTaskId == LlmTask().id) return
+
+        scope.launch {
+            val path = pickFile(listOf("onnx")) ?: return@launch
+            _state.update { it.copy(customModelPath = path) }
+        }
+    }
+
+    /**
+     * Opens the platform file picker for a labels `.txt` (classification only)
+     * and stores the chosen path for use by the ONNX classification engine.
+     */
+    fun onPickLabels() {
+        val current = _state.value
+        if (current.isRunning) return
+        if (current.selectedTaskId != ClassificationTask().id) return
+
+        scope.launch {
+            val path = pickFile(listOf("txt")) ?: return@launch
+            _state.update { it.copy(customLabelsPath = path) }
+        }
+    }
+
+    /** Clears a previously loaded custom model/labels, reverting to the bundled ones. */
+    fun onClearModel() {
+        _state.update { it.copy(customModelPath = null, customLabelsPath = null) }
+    }
+
     fun onRunClicked() {
         val current = _state.value
         if (current.isRunning || current.selectedEngineId == null) return
 
         val task = buildTask(current)
-        val engine = engineProvider.enginesFor(task)
+        val engine = engineProvider.enginesFor(task, current.customModelPath, current.customLabelsPath)
             .first { it.id == current.selectedEngineId }
 
         _state.update { it.copy(isRunning = true, progress = 0f, result = null) }
@@ -133,7 +171,7 @@ class BenchmarkViewModel(
         if (current.isRunning) return
 
         val task = buildTask(current)
-        val engines = engineProvider.enginesFor(task)
+        val engines = engineProvider.enginesFor(task, current.customModelPath, current.customLabelsPath)
         if (engines.isEmpty()) return
 
         _state.update {
@@ -197,8 +235,9 @@ class BenchmarkViewModel(
     }
 
     private fun refreshEngines() {
-        val task = buildTask(_state.value)
-        val engines = engineProvider.enginesFor(task)
+        val current = _state.value
+        val task = buildTask(current)
+        val engines = engineProvider.enginesFor(task, current.customModelPath, current.customLabelsPath)
             .map { EngineItem(it.id, it.displayName) }
         _state.update {
             it.copy(

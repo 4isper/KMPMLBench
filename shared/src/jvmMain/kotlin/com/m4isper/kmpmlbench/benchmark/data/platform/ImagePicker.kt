@@ -23,3 +23,17 @@ actual suspend fun pickImage(): String? = withContext(Dispatchers.IO) {
     }
     path
 }
+
+actual suspend fun pickFile(extensions: List<String>): String? = withContext(Dispatchers.IO) {
+    var path: String? = null
+    SwingUtilities.invokeAndWait {
+        val chooser = JFileChooser().apply {
+            dialogTitle = "Select a file"
+            fileFilter = FileNameExtensionFilter(extensions.joinToString(", ").uppercase(), *extensions.toTypedArray())
+        }
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            path = chooser.selectedFile?.takeIf { it.exists() }?.absolutePath
+        }
+    }
+    path
+}

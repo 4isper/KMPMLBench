@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -173,6 +174,63 @@ fun BenchmarkScreen() {
                             selected = engine.id == uiState.selectedEngineId,
                             onClick = { viewModel.onEngineSelected(engine.id) },
                         )
+                    }
+
+                    if (uiState.selectedTaskId != LlmTask().id) {
+                        Spacer(Modifier.height(12.dp))
+                        HorizontalDivider()
+                        Spacer(Modifier.height(12.dp))
+                        Text("Custom model", style = MaterialTheme.typography.titleSmall)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Button(
+                                onClick = viewModel::onPickModel,
+                                enabled = !uiState.isRunning,
+                            ) {
+                                Text(
+                                    if (uiState.customModelPath == null) "Load model (.onnx)…"
+                                    else "Replace model…",
+                                )
+                            }
+                            if (uiState.customModelPath != null) {
+                                Spacer(Modifier.width(8.dp))
+                                OutlinedButton(onClick = viewModel::onClearModel) {
+                                    Text("Reset")
+                                }
+                            }
+                        }
+                        uiState.customModelPath?.let { path ->
+                            Text(
+                                path.substringAfterLast('/').substringAfterLast(':'),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        if (uiState.customModelPath != null) {
+                            Text(
+                                "Своя модель: метрики качества могут не соответствовать классам/размеру входа модели",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (uiState.selectedTaskId == ClassificationTask().id) {
+                            Spacer(Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedButton(
+                                    onClick = viewModel::onPickLabels,
+                                    enabled = !uiState.isRunning,
+                                ) {
+                                    Text(
+                                        if (uiState.customLabelsPath == null) "Load labels (.txt)…"
+                                        else "Replace labels…",
+                                    )
+                                }
+                            }
+                            uiState.customLabelsPath?.let { path ->
+                                Text(
+                                    path.substringAfterLast('/').substringAfterLast(':'),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
                     }
                 }
             }

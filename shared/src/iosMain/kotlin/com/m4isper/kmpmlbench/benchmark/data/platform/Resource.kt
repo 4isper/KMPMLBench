@@ -71,6 +71,23 @@ actual fun loadImageFile(path: String): ImageBuffer {
     return decodeImageToArgb(path) ?: generateSyntheticImage(224, 224)
 }
 
+actual fun loadModelFile(path: String): ByteArray {
+    return memScoped {
+        val file = fopen(path, "rb")
+            ?: throw RuntimeException("cannot open model file: $path")
+        try {
+            fseek(file, 0, SEEK_END)
+            val size = ftell(file)
+            fseek(file, 0, SEEK_SET)
+            val buffer = allocArray<ByteVar>(size)
+            fread(buffer, 1UL, size.toULong(), file)
+            ByteArray(size.toInt()) { buffer[it] }
+        } finally {
+            fclose(file)
+        }
+    }
+}
+
 /** Decodes a bundled JPEG/PNG file into an ARGB [ImageBuffer] via UIKit. */
 internal fun decodeImageToArgb(path: String): ImageBuffer? {
     val uiImage = UIImage(contentsOfFile = path) ?: return null

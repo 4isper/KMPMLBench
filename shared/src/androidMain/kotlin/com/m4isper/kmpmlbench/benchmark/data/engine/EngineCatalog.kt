@@ -15,21 +15,25 @@ import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
  * Lite) classification engine adds a second real backend on-device. All real
  * engines are registered ahead of the mock.
  */
-actual fun platformEnginesFor(task: BenchmarkTask): List<MlEngine> = when (task) {
+actual fun platformEnginesFor(
+    task: BenchmarkTask,
+    customModelPath: String?,
+    customLabelsPath: String?,
+): List<MlEngine> = when (task) {
     is SuperResolutionTask -> listOf(
-        OnnxSuperResolutionEngine(task),
-        OnnxSuperResolutionEngine(task, executionProvider = "nnapi"),
+        OnnxSuperResolutionEngine(task, customModelPath = customModelPath),
+        OnnxSuperResolutionEngine(task, executionProvider = "nnapi", customModelPath = customModelPath),
         MockSuperResolutionEngine(task),
     )
     is ClassificationTask -> listOf(
-        OnnxClassificationEngine(task),
-        OnnxClassificationEngine(task, executionProvider = "nnapi"),
+        OnnxClassificationEngine(task, customModelPath = customModelPath, customLabelsPath = customLabelsPath),
+        OnnxClassificationEngine(task, executionProvider = "nnapi", customModelPath = customModelPath, customLabelsPath = customLabelsPath),
         LiteRtClassificationEngine(task),
         MockClassificationEngine(task),
     )
     is ObjectDetectionTask -> listOf(
-        OnnxObjectDetectionEngine(task),
-        OnnxObjectDetectionEngine(task, executionProvider = "nnapi"),
+        OnnxObjectDetectionEngine(task, customModelPath = customModelPath, customLabelsPath = customLabelsPath),
+        OnnxObjectDetectionEngine(task, executionProvider = "nnapi", customModelPath = customModelPath, customLabelsPath = customLabelsPath),
         MockObjectDetectionEngine(task),
     )
     is LlmTask -> listOf(MockLlmEngine(task))

@@ -11,3 +11,7 @@ package com.m4isper.kmpmlbench.benchmark.data.platform
 actual suspend fun pickImage(): String? {
     return null
 }
+
+actual suspend fun pickFile(extensions: List<String>): String? {
+    return null
+}

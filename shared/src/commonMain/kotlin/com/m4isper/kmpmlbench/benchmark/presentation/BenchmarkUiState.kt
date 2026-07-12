@@ -72,6 +72,10 @@ data class BenchmarkUiState(
     val customImagePath: String? = null,
     /** Decoded pixels of the user-supplied image, or null. Mirrors [customImagePath]. */
     val customImage: ImageBuffer? = null,
+    /** Path to a user-supplied `.onnx` model file (overrides the bundled model). */
+    val customModelPath: String? = null,
+    /** Path to a user-supplied labels file (classification/detection), or null. */
+    val customLabelsPath: String? = null,
     /** Results of a multi-engine comparison run, or null if not compared yet. */
     val comparison: List<BenchmarkResultUi>? = null,
     val comparisonProgress: Float = 0f,

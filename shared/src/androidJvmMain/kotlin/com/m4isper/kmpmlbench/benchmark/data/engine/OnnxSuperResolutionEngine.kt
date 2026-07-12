@@ -10,6 +10,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.data.engine.configureProvider
 import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelBytes
+import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelFile
 import com.m4isper.kmpmlbench.benchmark.domain.processing.computePsnr
 import com.m4isper.kmpmlbench.benchmark.domain.processing.computeSsim
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
@@ -34,6 +35,8 @@ class OnnxSuperResolutionEngine(
     private val modelResourcePath: String = "models/super-resolution-10.onnx",
     private val scale: Int = 3,
     private val executionProvider: String = "cpu",
+    /** When set, load the model from this user-supplied file instead of [modelResourcePath]. */
+    val customModelPath: String? = null,
 ) : MlEngine {
     override val id: String = when (executionProvider) {
         "coreml" -> "onnx-coreml-sr"
@@ -57,7 +60,7 @@ class OnnxSuperResolutionEngine(
     }
 
     override fun initialize() {
-        val bytes = loadModelBytes(modelResourcePath)
+        val bytes = if (customModelPath != null) loadModelFile(customModelPath) else loadModelBytes(modelResourcePath)
         val options = OrtSession.SessionOptions()
         configureProvider(options, executionProvider)
         session = env.createSession(bytes, options)

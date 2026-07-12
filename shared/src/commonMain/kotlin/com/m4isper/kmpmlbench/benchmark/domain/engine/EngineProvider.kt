@@ -10,5 +10,14 @@ import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
  * the concrete implementation lives in the `data` layer.
  */
 interface EngineProvider {
-    fun enginesFor(task: BenchmarkTask): List<MlEngine>
+    /**
+     * Resolves the engines available for [task]. [customModelPath] (and, for
+     * classification/detection, [customLabelsPath]) let the UI run the user's
+     * own `.onnx` model / labels file instead of the bundled resources.
+     */
+    fun enginesFor(
+        task: BenchmarkTask,
+        customModelPath: String? = null,
+        customLabelsPath: String? = null,
+    ): List<MlEngine>
 }

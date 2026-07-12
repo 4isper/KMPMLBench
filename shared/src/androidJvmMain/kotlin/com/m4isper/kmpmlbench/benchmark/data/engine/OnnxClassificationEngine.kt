@@ -9,6 +9,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ClassificationQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.data.engine.configureProvider
 import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelBytes
+import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelFile
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import kotlin.math.exp
@@ -34,6 +35,10 @@ class OnnxClassificationEngine(
     private val labelsResourcePath: String = "models/imagenet_classes.txt",
     private val inputSize: Int = 224,
     private val executionProvider: String = "cpu",
+    /** When set, load the model from this user-supplied file instead of [modelResourcePath]. */
+    val customModelPath: String? = null,
+    /** When set, load class names from this user-supplied file instead of [labelsResourcePath]. */
+    val customLabelsPath: String? = null,
 ) : MlEngine {
     override val id: String = when (executionProvider) {
         "coreml" -> "onnx-cls-coreml"
@@ -52,12 +57,16 @@ class OnnxClassificationEngine(
     private var labels: List<String> = emptyList()
 
     override fun initialize() {
-        val modelBytes = loadModelBytes(modelResourcePath)
+        val modelBytes = if (customModelPath != null) loadModelFile(customModelPath) else loadModelBytes(modelResourcePath)
         val options = OrtSession.SessionOptions()
         configureProvider(options, executionProvider)
         session = env.createSession(modelBytes, options)
 
-        labels = loadModelBytes(labelsResourcePath).decodeToString().lines()
+        labels = if (customLabelsPath != null) {
+            loadModelFile(customLabelsPath).decodeToString().lines()
+        } else {
+            loadModelBytes(labelsResourcePath).decodeToString().lines()
+        }
     }
 
     override fun infer(input: BenchmarkInput): BenchmarkOutput {

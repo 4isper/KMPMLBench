@@ -27,3 +27,11 @@ expect fun loadImageBuffer(path: String): ImageBuffer
  * on the JVM, UIKit on iOS.
  */
 expect fun loadImageFile(path: String): ImageBuffer
+
+/**
+ * Loads an arbitrary user-selected model/label **file** (not a bundled
+ * resource) as raw bytes. Used when the UI lets the user benchmark their own
+ * `.onnx` model or labels file. Decoding is platform-specific: a plain file
+ * read on the JVM/Android, `fopen` on iOS.
+ */
+expect fun loadModelFile(path: String): ByteArray

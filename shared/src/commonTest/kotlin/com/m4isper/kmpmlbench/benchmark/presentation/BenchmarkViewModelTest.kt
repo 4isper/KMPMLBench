@@ -38,13 +38,27 @@ private class FakeEngine(
 }
 
 private class FakeProvider(private val engine: MlEngine) : EngineProvider {
-    override fun enginesFor(task: BenchmarkTask) = listOf(engine)
+    var lastCustomModelPath: String? = null
+    var lastCustomLabelsPath: String? = null
+    override fun enginesFor(
+        task: BenchmarkTask,
+        customModelPath: String?,
+        customLabelsPath: String?,
+    ): List<MlEngine> {
+        lastCustomModelPath = customModelPath
+        lastCustomLabelsPath = customLabelsPath
+        return listOf(engine)
+    }
 }
 
 private class TwoEngineProvider : EngineProvider {
     private val a = FakeEngine(id = "a", displayName = "Engine A")
     private val b = FakeEngine(id = "b", displayName = "Engine B")
-    override fun enginesFor(task: BenchmarkTask) = listOf(a, b)
+    override fun enginesFor(
+        task: BenchmarkTask,
+        customModelPath: String?,
+        customLabelsPath: String?,
+    ) = listOf(a, b)
 }
 
 private class FakeUseCase : BenchmarkUseCase {

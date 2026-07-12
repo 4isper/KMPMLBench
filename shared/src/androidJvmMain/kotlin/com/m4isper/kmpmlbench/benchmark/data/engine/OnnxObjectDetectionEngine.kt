@@ -17,6 +17,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.processing.resizeBilinear
 import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.data.engine.configureProvider
 import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelBytes
+import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelFile
 import java.nio.FloatBuffer
 import kotlin.math.exp
 
@@ -50,6 +51,10 @@ class OnnxObjectDetectionEngine(
     private val confidenceThreshold: Float = 0.7f,
     private val nmsThreshold: Float = 0.45f,
     private val executionProvider: String = "cpu",
+    /** When set, load the model from this user-supplied file instead of [modelResourcePath]. */
+    val customModelPath: String? = null,
+    /** When set, load class names from this user-supplied file instead of [labelsResourcePath]. */
+    val customLabelsPath: String? = null,
 ) : MlEngine {
     override val id: String = when (executionProvider) {
         "coreml" -> "onnx-od-coreml"
@@ -68,11 +73,15 @@ class OnnxObjectDetectionEngine(
     private var labels: List<String> = emptyList()
 
     override fun initialize() {
-        val modelBytes = loadModelBytes(modelResourcePath)
+        val modelBytes = if (customModelPath != null) loadModelFile(customModelPath) else loadModelBytes(modelResourcePath)
         val options = OrtSession.SessionOptions()
         configureProvider(options, executionProvider)
         session = env.createSession(modelBytes, options)
-        labels = loadModelBytes(labelsResourcePath).decodeToString().lines()
+        labels = if (customLabelsPath != null) {
+            loadModelFile(customLabelsPath).decodeToString().lines()
+        } else {
+            loadModelBytes(labelsResourcePath).decodeToString().lines()
+        }
     }
 
     override fun infer(input: BenchmarkInput): BenchmarkOutput {

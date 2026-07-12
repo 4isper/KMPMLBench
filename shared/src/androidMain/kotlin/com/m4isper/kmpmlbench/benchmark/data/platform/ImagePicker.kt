@@ -26,6 +26,20 @@ actual suspend fun pickImage(): String? = suspendCancellableCoroutine { cont ->
     launcher.launch("image/*")
 }
 
+actual suspend fun pickFile(extensions: List<String>): String? = suspendCancellableCoroutine { cont ->
+    val activity = currentComponentActivity()
+    if (activity == null) {
+        cont.resume(null)
+        return@suspendCancellableCoroutine
+    }
+    val launcher = activity.activityResultRegistry.register(
+        "kmpmlbench-file-picker-${System.nanoTime()}",
+        ActivityResultContracts.GetContent(),
+    ) { uri: android.net.Uri? -> cont.resume(uri?.toString()) }
+    cont.invokeOnCancellation { launcher.unregister() }
+    launcher.launch("*/*")
+}
+
 /** Reflectively resolves the foreground [ComponentActivity] without a hidden API import. */
 private fun currentComponentActivity(): ComponentActivity? = try {
     val threadClass = Class.forName("android.app.ActivityThread")

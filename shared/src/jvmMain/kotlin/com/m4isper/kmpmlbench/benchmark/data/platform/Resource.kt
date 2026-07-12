@@ -28,3 +28,9 @@ actual fun loadImageFile(path: String): ImageBuffer {
     image.getRGB(0, 0, image.width, image.height, pixels, 0, image.width)
     return ImageBuffer(image.width, image.height, pixels)
 }
+
+actual fun loadModelFile(path: String): ByteArray {
+    val file = File(path)
+    require(file.exists()) { "Model/label file not found: $path" }
+    return file.readBytes()
+}

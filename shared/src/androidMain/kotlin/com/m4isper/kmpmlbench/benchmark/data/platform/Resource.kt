@@ -39,6 +39,16 @@ actual fun loadImageFile(path: String): ImageBuffer {
     return ImageBuffer(bitmap.width, bitmap.height, pixels)
 }
 
+actual fun loadModelFile(path: String): ByteArray {
+    val ctx = currentApplication()
+        ?: throw IllegalStateException("No context available to load model file: $path")
+    return if (path.startsWith("content://") || path.startsWith("file://")) {
+        ctx.contentResolver.openInputStream(android.net.Uri.parse(path))?.use { it.readBytes() }
+    } else {
+        java.io.File(path).readBytes()
+    } ?: throw IllegalStateException("Failed to read model/label file: $path")
+}
+
 /**
  * Resolves the running [Context] without referencing the hidden
  * `android.app.ActivityThread` class at compile time. The class is always

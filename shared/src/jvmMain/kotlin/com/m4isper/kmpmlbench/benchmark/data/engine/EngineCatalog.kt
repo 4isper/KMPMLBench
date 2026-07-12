@@ -13,20 +13,24 @@ import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
  * latency comparison, plus the mock as a fallback so the harness keeps working
  * if the model is missing or fails to load.
  */
-actual fun platformEnginesFor(task: BenchmarkTask): List<MlEngine> = when (task) {
+actual fun platformEnginesFor(
+    task: BenchmarkTask,
+    customModelPath: String?,
+    customLabelsPath: String?,
+): List<MlEngine> = when (task) {
     is SuperResolutionTask -> listOf(
-        OnnxSuperResolutionEngine(task),
-        OnnxSuperResolutionEngine(task, executionProvider = "coreml"),
+        OnnxSuperResolutionEngine(task, customModelPath = customModelPath),
+        OnnxSuperResolutionEngine(task, executionProvider = "coreml", customModelPath = customModelPath),
         MockSuperResolutionEngine(task),
     )
     is ClassificationTask -> listOf(
-        OnnxClassificationEngine(task),
-        OnnxClassificationEngine(task, executionProvider = "coreml"),
+        OnnxClassificationEngine(task, customModelPath = customModelPath, customLabelsPath = customLabelsPath),
+        OnnxClassificationEngine(task, executionProvider = "coreml", customModelPath = customModelPath, customLabelsPath = customLabelsPath),
         MockClassificationEngine(task),
     )
     is ObjectDetectionTask -> listOf(
-        OnnxObjectDetectionEngine(task),
-        OnnxObjectDetectionEngine(task, executionProvider = "coreml"),
+        OnnxObjectDetectionEngine(task, customModelPath = customModelPath, customLabelsPath = customLabelsPath),
+        OnnxObjectDetectionEngine(task, executionProvider = "coreml", customModelPath = customModelPath, customLabelsPath = customLabelsPath),
         MockObjectDetectionEngine(task),
     )
     is LlmTask -> listOf(MockLlmEngine(task))
