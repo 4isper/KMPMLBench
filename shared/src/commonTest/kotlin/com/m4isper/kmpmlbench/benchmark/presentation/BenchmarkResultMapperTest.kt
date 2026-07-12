@@ -160,7 +160,7 @@ class BenchmarkResultMapperTest {
         // LLM has no pixel output, so the preview frame is suppressed.
         assertNull(ui.outputImage)
         assertTrue(ui.quality is LlmQualityUi)
-        val q = ui.quality as LlmQualityUi
+        val q = ui.quality
         assertEquals("Hello — Kotlin Multiplatform shares logic across platforms.", q.generatedText)
         assertEquals(40.0, q.tokensPerSecond, 0.0)
         assertEquals(60L, q.firstTokenLatencyMs)
