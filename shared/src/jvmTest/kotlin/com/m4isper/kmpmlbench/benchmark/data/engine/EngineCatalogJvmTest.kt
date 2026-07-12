@@ -104,8 +104,10 @@ class EngineCatalogJvmTest {
 
         val qCpu = outCpu.quality as DetectionQualityMetrics
         val qCore = outCore.quality as DetectionQualityMetrics
-        assertEquals(input.width, outCpu.width)
-        assertEquals(input.height, outCpu.height)
+        // The engine returns the model-input-sized (640×640) frame regardless of
+        // the input photo dimensions, so compare against that, not input.width.
+        assertEquals(640, outCpu.width)
+        assertEquals(640, outCpu.height)
         assertEquals(outCpu.width, outCore.width)
         assertEquals(outCpu.height, outCore.height)
         // A synthetic gradient triggers many false-positive detections; the two
