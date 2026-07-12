@@ -47,7 +47,7 @@ class MockClassificationEngine(
         val top = ranked.first()
         val predicted = task.classNames[top.index]
         val topK = ranked.map { task.classNames[it.index] to it.value }
-        val accuracy = if (predicted == input.label) 1.0 else 0.0
+        val accuracy = if (topK.any { it.first == input.label }) 1.0 else 0.0
 
         val quality = ClassificationQualityMetrics(
             predictedClass = predicted,
