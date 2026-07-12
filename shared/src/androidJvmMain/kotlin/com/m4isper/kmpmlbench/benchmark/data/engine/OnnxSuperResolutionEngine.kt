@@ -17,7 +17,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import java.nio.FloatBuffer
 
 /**
- * Real Super-Resolution engine backed by ONNX Runtime (Desktop/JVM only).
+ * Real Super-Resolution engine backed by ONNX Runtime (Desktop/JVM + Android).
  *
  * Uses the ONNX Model Zoo "super-resolution" Sub-Pixel CNN (ESPCN-style), which
  * upscales the luma (Y) channel by a fixed factor of 3. The benchmark's ARGB
@@ -74,9 +74,9 @@ class OnnxSuperResolutionEngine(
         val modelOutH = inH * scale
         // The model requires a fixed 224x224 input, so the (arbitrary) LR frame
         // is bilinearly resized to fit before preprocessing.
-        val lr = resizeBilinear(input.image, inW, inH)
+        val lr = srResizeBilinear(input.image, inW, inH)
 
-        val (y, cb, cr) = toYCbCr(lr)
+        val (y, cb, cr) = srToYCbCr(lr)
         val inputData = FloatArray(inW * inH) { y[it] / 255f }
         val shape = longArrayOf(1, 1, inH.toLong(), inW.toLong())
         val inputName = sess.inputNames.first()
@@ -91,9 +91,9 @@ class OnnxSuperResolutionEngine(
             for (j in 0 until modelOutH) for (i in 0 until modelOutW) {
                 yOut[j * modelOutW + i] = (out[j][i] * 255f).coerceIn(0f, 255f)
             }
-            val cbUp = upscaleChannel(cb, inW, inH, scale)
-            val crUp = upscaleChannel(cr, inW, inH, scale)
-            val modelOut = ycbcrToArgb(yOut, cbUp, crUp, modelOutW, modelOutH)
+            val cbUp = srUpscaleChannel(cb, inW, inH, scale)
+            val crUp = srUpscaleChannel(cr, inW, inH, scale)
+            val modelOut = srYcbcrToArgb(yOut, cbUp, crUp, modelOutW, modelOutH)
 
             // The model is fixed at 224x224 in / 672x672 (x3) out, but a benchmark
             // task may request a different resolution. Resize the model output to
@@ -104,7 +104,7 @@ class OnnxSuperResolutionEngine(
             val reconstructed = if (modelOutW == outW && modelOutH == outH) {
                 modelOut
             } else {
-                resizeBilinear(modelOut, outW, outH)
+                srResizeBilinear(modelOut, outW, outH)
             }
 
             // Quality is scored against the task's ground truth (the same HR image
@@ -131,105 +131,5 @@ class OnnxSuperResolutionEngine(
         session?.close()
         session = null
         env.close()
-    }
-
-    private data class YCbCr(val y: FloatArray, val cb: FloatArray, val cr: FloatArray)
-
-    private fun toYCbCr(buf: ImageBuffer): YCbCr {
-        val n = buf.width * buf.height
-        val y = FloatArray(n)
-        val cb = FloatArray(n)
-        val cr = FloatArray(n)
-        for (i in 0 until n) {
-            val p = buf.pixels[i]
-            val r = (p shr 16) and 0xFF
-            val g = (p shr 8) and 0xFF
-            val b = p and 0xFF
-            y[i] = 0.299f * r + 0.587f * g + 0.114f * b
-            cb[i] = -0.1687f * r - 0.3313f * g + 0.5f * b + 128f
-            cr[i] = 0.5f * r - 0.4187f * g - 0.0813f * b + 128f
-        }
-        return YCbCr(y, cb, cr)
-    }
-
-    private fun ycbcrToArgb(y: FloatArray, cb: FloatArray, cr: FloatArray, w: Int, h: Int): ImageBuffer {
-        val pixels = IntArray(w * h)
-        for (i in 0 until w * h) {
-            val cbb = cb[i] - 128f
-            val crr = cr[i] - 128f
-            val r = (y[i] + 1.402f * crr).coerceIn(0f, 255f)
-            val g = (y[i] - 0.344136f * cbb - 0.714136f * crr).coerceIn(0f, 255f)
-            val b = (y[i] + 1.772f * cbb).coerceIn(0f, 255f)
-            pixels[i] = (255 shl 24) or (r.toInt() shl 16) or (g.toInt() shl 8) or b.toInt()
-        }
-        return ImageBuffer(w, h, pixels)
-    }
-
-    private fun upscaleChannel(src: FloatArray, w: Int, h: Int, factor: Int): FloatArray {
-        val ow = w * factor
-        val oh = h * factor
-        val out = FloatArray(ow * oh)
-        for (y in 0 until oh) {
-            val sy = y.toDouble() / factor
-            val y0 = sy.toInt().coerceIn(0, h - 1)
-            val y1 = (y0 + 1).coerceAtMost(h - 1)
-            val fy = sy - y0
-            for (x in 0 until ow) {
-                val sx = x.toDouble() / factor
-                val x0 = sx.toInt().coerceIn(0, w - 1)
-                val x1 = (x0 + 1).coerceAtMost(w - 1)
-                val fx = sx - x0
-                val c00 = src[y0 * w + x0]
-                val c10 = src[y0 * w + x1]
-                val c01 = src[y1 * w + x0]
-                val c11 = src[y1 * w + x1]
-                val top = c00 + (c10 - c00) * fx
-                val bot = c01 + (c11 - c01) * fx
-                out[y * ow + x] = (top + (bot - top) * fy).toFloat()
-            }
-        }
-        return out
-    }
-
-    /** General ARGB bilinear resize to an arbitrary [outW]x[outH] target. */
-    private fun resizeBilinear(src: ImageBuffer, outW: Int, outH: Int): ImageBuffer {
-        val inW = src.width
-        val inH = src.height
-        val out = IntArray(outW * outH)
-        for (y in 0 until outH) {
-            val sy = (y.toDouble() + 0.5) * inH / outH - 0.5
-            val y0 = sy.toInt().coerceIn(0, inH - 1)
-            val y1 = (y0 + 1).coerceAtMost(inH - 1)
-            val fy = sy - y0
-            for (x in 0 until outW) {
-                val sx = (x.toDouble() + 0.5) * inW / outW - 0.5
-                val x0 = sx.toInt().coerceIn(0, inW - 1)
-                val x1 = (x0 + 1).coerceAtMost(inW - 1)
-                val fx = sx - x0
-                out[y * outW + x] = lerpArgb(
-                    src.pixels[y0 * inW + x0],
-                    src.pixels[y0 * inW + x1],
-                    src.pixels[y1 * inW + x0],
-                    src.pixels[y1 * inW + x1],
-                    fx,
-                    fy,
-                )
-            }
-        }
-        return ImageBuffer(outW, outH, out)
-    }
-
-    private fun lerpArgb(c00: Int, c10: Int, c01: Int, c11: Int, fx: Double, fy: Double): Int {
-        val r = lerpCh((c00 shr 16) and 0xFF, (c10 shr 16) and 0xFF, (c01 shr 16) and 0xFF, (c11 shr 16) and 0xFF, fx, fy)
-        val g = lerpCh((c00 shr 8) and 0xFF, (c10 shr 8) and 0xFF, (c01 shr 8) and 0xFF, (c11 shr 8) and 0xFF, fx, fy)
-        val b = lerpCh(c00 and 0xFF, c10 and 0xFF, c01 and 0xFF, c11 and 0xFF, fx, fy)
-        val a = lerpCh((c00 shr 24) and 0xFF, (c10 shr 24) and 0xFF, (c01 shr 24) and 0xFF, (c11 shr 24) and 0xFF, fx, fy)
-        return (a shl 24) or (r shl 16) or (g shl 8) or b
-    }
-
-    private fun lerpCh(a: Int, b: Int, c: Int, d: Int, fx: Double, fy: Double): Int {
-        val top = a + (b - a) * fx
-        val bot = c + (d - c) * fx
-        return (top + (bot - top) * fy).toInt().coerceIn(0, 255)
     }
 }
