@@ -13,7 +13,9 @@ import kotlin.test.assertTrue
 class OnnxClassificationEngineTest {
     @Test
     fun runsRealInferenceAndScoresClassification() {
-        val task = ClassificationTask(inputWidth = 64, inputHeight = 64, numClasses = 10)
+        // Real bundled photo + its ground-truth ImageNet label, so the
+        // score is meaningful (top-1 vs GT) instead of always 0.
+        val task = ClassificationTask()
         val engine = OnnxClassificationEngine(task)
         val input = task.createInput()
 
@@ -25,8 +27,10 @@ class OnnxClassificationEngineTest {
         assertEquals(input.height, output.height)
 
         val q = output.quality as ClassificationQualityMetrics
-        assertTrue(q.predictedClass.isNotEmpty(), "predicted class must be named")
-        assertTrue(q.confidence > 0.0 && q.confidence <= 1.0, "confidence in (0,1]")
+        assertEquals(task.sampleLabel, q.predictedClass, "top-1 must match the photo's ground-truth class")
+        assertEquals(1.0, q.accuracy, 0.0, "top-1 must equal the ground-truth label")
+        assertEquals(q.predictedClass, q.topK.first().first, "predicted class is the top-1 of topK")
+        assertEquals(q.confidence, q.topK.first().second, 0.0, "confidence equals the top-1 probability")
         assertEquals(5, q.topK.size)
         for (i in 1 until q.topK.size) {
             assertTrue(q.topK[i - 1].second >= q.topK[i].second, "topK sorted descending")

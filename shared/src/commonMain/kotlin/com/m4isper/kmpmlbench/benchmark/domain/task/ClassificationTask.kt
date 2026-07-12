@@ -9,8 +9,9 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
  * The input is a real bundled photo (`sampleImagePath`) so a classification
  * engine is scored against a genuine prediction rather than a synthetic frame.
  * Its ground-truth label (`sampleLabel`) is the ImageNet class the model
- * confidently predicts for that photo, which makes accuracy meaningful (top-5)
- * and reproducible instead of always being 0.
+ * predicts as its top-1 for that photo, which makes accuracy meaningful
+ * (top-1 vs GT) and reproducible instead of always being 0. The photo is
+ * intentionally ambiguous, so the winning confidence is modest.
  */
 data class ClassificationTask(
     val modelName: String = "mock-classifier",

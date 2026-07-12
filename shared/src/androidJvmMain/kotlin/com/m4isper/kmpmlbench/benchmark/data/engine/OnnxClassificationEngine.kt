@@ -21,8 +21,8 @@ import java.nio.FloatBuffer
  * task's input: the ARGB frame is bilinearly resized to 224x224, converted to
  * RGB and normalized with ImageNet statistics, fed to the model, and the
  * 1000-class logits are softmaxed into per-class probabilities. The top class
- * and its confidence are reported; accuracy is scored against the task's
- * (synthetic) input label so it stays comparable to the mock engine.
+ * and its confidence are reported; accuracy is the top-1 match against the
+ * task's ground-truth label (a real photo, not a synthetic frame).
  *
  * The engine can optionally run on the CoreML execution provider (Apple
  * Neural Engine / GPU) instead of the default CPU provider, so the benchmark UI
