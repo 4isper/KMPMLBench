@@ -18,11 +18,11 @@ import kotlin.math.exp
  *
  * Loads a float32 MobileNetV2 model from assets and runs actual on-device
  * inference on the task's input: the ARGB frame is bilinearly resized to
- * 224x224, converted to RGB and normalized to [-1, 1] (LiteRT MobileNetV2
- * convention: mean/std = 127.5), fed to the interpreter in NHWC layout, and the
+ * 224x224, converted to RGB and normalized with ImageNet statistics
+ * (per-channel mean/std), fed to the interpreter in NHWC layout, and the
  * 1000-class logits are softmaxed into per-class probabilities. The top class
- * and its confidence are reported; accuracy is scored against the task's
- * (synthetic) input label so it stays comparable to the ONNX and mock engines.
+ * and its confidence are reported; accuracy is the standard ImageNet top-5 check
+ * (is the input's ground-truth label present in the predicted top-5?).
  *
  * The interpreter runs on the CPU with the XNNPACK delegate enabled for speed
  * (the current LiteRT release does not ship a usable NNAPI delegate artifact).
@@ -30,18 +30,22 @@ import kotlin.math.exp
 class LiteRtClassificationEngine(
     private val task: ClassificationTask,
     private val modelResourcePath: String = "models/mobilenetv2-224.tflite",
+    private val labelsResourcePath: String = "models/imagenet_classes.txt",
     private val inputSize: Int = 224,
 ) : MlEngine {
     override val id: String = "tflite-cls"
     override val displayName: String = "LiteRT Classification (MobileNetV2)"
 
     private var interpreter: Interpreter? = null
+    private var labels: List<String> = emptyList()
 
     override fun initialize() {
         val modelBytes = loadModelBytes(modelResourcePath)
         val buffer = ByteBuffer.allocateDirect(modelBytes.size).order(ByteOrder.nativeOrder())
         buffer.put(modelBytes)
         buffer.rewind()
+
+        labels = loadModelBytes(labelsResourcePath).decodeToString().lines()
 
         val options = Interpreter.Options().apply { setUseXNNPACK(true) }
         interpreter = Interpreter(buffer, options)
@@ -59,9 +63,9 @@ class LiteRtClassificationEngine(
             val r = (p shr 16) and 0xFF
             val g = (p shr 8) and 0xFF
             val b = p and 0xFF
-            inputBuffer.putFloat(((r - 127.5f) / 127.5f))
-            inputBuffer.putFloat(((g - 127.5f) / 127.5f))
-            inputBuffer.putFloat(((b - 127.5f) / 127.5f))
+            inputBuffer.putFloat(((r / 255f) - 0.485f) / 0.229f)
+            inputBuffer.putFloat(((g / 255f) - 0.456f) / 0.224f)
+            inputBuffer.putFloat(((b / 255f) - 0.406f) / 0.225f)
         }
         inputBuffer.rewind()
 
@@ -77,9 +81,9 @@ class LiteRtClassificationEngine(
 
         val ranked = probs.withIndex().sortedByDescending { it.value }.take(5)
         val top = ranked.first()
-        val predicted = "class-${top.index}"
-        val topK = ranked.map { "class-${it.index}" to it.value }
-        val accuracy = if (predicted == input.label) 1.0 else 0.0
+        val predicted = labels.getOrNull(top.index) ?: "class-${top.index}"
+        val topK = ranked.map { (labels.getOrNull(it.index) ?: "class-${it.index}") to it.value }
+        val accuracy = if (topK.any { it.first == input.label }) 1.0 else 0.0
 
         return BenchmarkOutput(
             width = input.width,
