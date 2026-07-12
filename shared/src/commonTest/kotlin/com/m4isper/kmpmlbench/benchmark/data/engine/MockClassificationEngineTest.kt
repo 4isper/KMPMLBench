@@ -20,7 +20,7 @@ class MockClassificationEngineTest {
 
         assertEquals(input.width, output.width)
         assertEquals(input.height, output.height)
-        assertTrue(q.predictedClass in task.classNames)
+        assertEquals(input.label, q.predictedClass, "mock returns the ground-truth label (a real ImageNet name) as top-1")
         assertTrue(q.confidence > 0.0 && q.confidence <= 1.0)
         assertEquals(5, q.topK.size)
         // Probabilities are sorted in descending order.
