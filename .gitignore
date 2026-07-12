@@ -18,3 +18,5 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 .qwen/
+# Vendored out-of-band native library (downloaded by the build, like bundled models)
+shared/libs/

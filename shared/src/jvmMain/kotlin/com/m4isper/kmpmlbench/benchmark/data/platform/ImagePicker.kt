@@ -37,3 +37,19 @@ actual suspend fun pickFile(extensions: List<String>): String? = withContext(Dis
     }
     path
 }
+
+actual suspend fun pickDirectory(): String? = withContext(Dispatchers.IO) {
+    var path: String? = null
+    SwingUtilities.invokeAndWait {
+        val chooser = JFileChooser().apply {
+            dialogTitle = "Select a model folder"
+            fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+        }
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            path = chooser.selectedFile?.takeIf { it.exists() && it.isDirectory }?.absolutePath
+        }
+    }
+    path
+}
+
+actual val realLlmEngineSupported: Boolean = false

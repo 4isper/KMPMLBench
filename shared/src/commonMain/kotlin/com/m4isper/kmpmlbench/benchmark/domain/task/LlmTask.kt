@@ -5,7 +5,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 
 /**
  * On-device LLM: generate a continuation for a text prompt using a small
- * language model (e.g. Gemma-2B / Phi-2) running via ExecuTorch.
+ * language model (e.g. Gemma-2B / Phi-2) running via ONNX Runtime GenAI.
  *
  * The domain is image-centric, so the task still carries a (dummy) pixel buffer
  * to satisfy [BenchmarkInput], but the real signal is [prompt] and the engine's

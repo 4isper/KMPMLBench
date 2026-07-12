@@ -36,6 +36,11 @@ actual fun platformEnginesFor(
         OnnxObjectDetectionEngine(task, executionProvider = "nnapi", customModelPath = customModelPath, customLabelsPath = customLabelsPath),
         MockObjectDetectionEngine(task),
     )
-    is LlmTask -> listOf(MockLlmEngine(task))
+    is LlmTask -> buildList {
+        // The real engine only registers once the user supplies an ORT GenAI
+        // model folder (out-of-band); otherwise fall back to the mock.
+        if (customModelPath != null) add(OnnxLlmEngine(task, customModelPath = customModelPath))
+        add(MockLlmEngine(task))
+    }
     else -> emptyList()
 }

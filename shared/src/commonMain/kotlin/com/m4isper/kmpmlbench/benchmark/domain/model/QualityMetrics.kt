@@ -31,10 +31,10 @@ data class DetectionQualityMetrics(
     val mAP: Double,
 ) : QualityMetrics
 
-/** On-device LLM quality: generated text plus decode throughput and token counts. */
+/** On-device LLM quality: generated text plus decode throughput and token counts (real for ORT GenAI). */
 data class LlmQualityMetrics(
     val generatedText: String,
-    /** Decoded tokens per second (placeholder for the mock, real for ExecuTorch). */
+    /** Decoded tokens per second (placeholder for the mock, real for ORT GenAI). */
     val tokensPerSecond: Double,
     /** Time to emit the first token after the prompt is consumed, in ms (null if n/a). */
     val firstTokenLatencyMs: Long? = null,

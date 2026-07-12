@@ -1,5 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+import java.net.URI
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinCocoapods)
@@ -7,6 +9,19 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+}
+
+// ONNX Runtime GenAI is not published to Maven Central (only as a GitHub-release
+// AAR), so we vendor it locally under shared/libs. It is fetched on demand
+// (mirroring how the bundled ONNX models are supplied out-of-band) and gitignored.
+val ortGenaiVersion = "0.14.0"
+val ortGenaiAarFile = layout.projectDirectory.file("libs/onnxruntime-genai-android.aar").asFile
+if (!ortGenaiAarFile.exists()) {
+    ortGenaiAarFile.parentFile.mkdirs()
+    val url =
+        "https://github.com/microsoft/onnxruntime-genai/releases/download/v$ortGenaiVersion/" +
+            "onnxruntime-genai-android-$ortGenaiVersion.aar"
+    URI(url).toURL().openStream().use { input -> ortGenaiAarFile.outputStream().use { output -> input.copyTo(output) } }
 }
 
 kotlin {
@@ -75,6 +90,7 @@ kotlin {
             kotlin.srcDir("src/androidJvmMain/kotlin")
             dependencies {
                 implementation(libs.onnxruntime.android)
+                implementation(files(ortGenaiAarFile))
                 implementation(libs.litert)
                 implementation(libs.androidx.activity.compose)
             }

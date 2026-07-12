@@ -15,3 +15,9 @@ actual suspend fun pickImage(): String? {
 actual suspend fun pickFile(extensions: List<String>): String? {
     return null
 }
+
+actual suspend fun pickDirectory(): String? {
+    return null
+}
+
+actual val realLlmEngineSupported: Boolean = false

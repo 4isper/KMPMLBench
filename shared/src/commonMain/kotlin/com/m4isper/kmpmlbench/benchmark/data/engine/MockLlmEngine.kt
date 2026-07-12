@@ -13,11 +13,13 @@ import kotlin.time.TimeSource
 /**
  * Placeholder engine for the on-device LLM benchmark harness.
  *
- * The real backend — ExecuTorch running a Gemma-2B / Phi-2 `.pte` model — is not
- * bundled yet (the model is supplied out-of-band, exactly like the `.tflite`
- * used for classification). Until then this mock simulates token-by-token
- * decoding so the entire UI/metrics pipeline (latency, tokens/sec, first-token
- * latency, prompt/completion token counts) is exercised end-to-end.
+ * The real backend — ONNX Runtime GenAI running a Gemma-2B / Phi-2 ORT model —
+ * is available on Android (see [OnnxLlmEngine]); the Desktop target keeps this
+ * mock because ORT GenAI has no published JVM dependency. Until a model folder
+ * is supplied (out-of-band, like the classification `.tflite`), this mock
+ * simulates token-by-token decoding so the entire UI/metrics pipeline (latency,
+ * tokens/sec, first-token latency, prompt/completion token counts) is exercised
+ * end-to-end.
  *
  * Decode speed is a fixed placeholder (~40 tok/s) so the harness renders
  * believable numbers; it is intentionally NOT derived from wall-clock and will
