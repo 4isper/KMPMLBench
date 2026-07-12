@@ -30,6 +30,7 @@ actual fun platformEnginesFor(
         OnnxClassificationEngine(task, customModelPath = customModelPath, customLabelsPath = customLabelsPath),
         OnnxClassificationEngine(task, executionProvider = "nnapi", customModelPath = customModelPath, customLabelsPath = customLabelsPath),
         LiteRtClassificationEngine(task),
+        NcnnClassificationEngine(task),
         MockClassificationEngine(task),
     )
     is ObjectDetectionTask -> listOf(

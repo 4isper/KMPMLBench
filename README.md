@@ -13,7 +13,7 @@ The ML landscape is fragmented. Developers often struggle to decide which engine
 | :--- | :---: | :---: | :---: | :--- | :--- |
 | **ONNX Runtime** | ✅ | ✅ | ✅ | CoreML, NNAPI, DirectML, XNNPACK | Desktop (JVM) + Android ready — *Desktop offered with default CPU and CoreML (on macOS); Android offered with default CPU and NNAPI, for an on-device comparison*; iOS offers the real OD engine (`onnx-od`) via `onnxruntime-objc`, with CLS/SR/LLM still mock |
 | **TensorFlow Lite** | ✅ | 📅 | 📅 | XNNPACK (CPU), NNAPI*, GPU* | Android Classification ready — *real MobileNetV2 inference via the `com.google.ai.edge.litert:litert` Android `.aar` (LiteRT 2.1.6), offered on CPU with the XNNPACK delegate (`tflite-cls`); no desktop JVM native is published, so Desktop/iOS stay out of scope; NNAPI is not yet shipped as a usable delegate artifact in the current LiteRT release* |
-| **NCNN** | ✅ | 📅 | 📅 | Vulkan, Metal | Android Super-Resolution ready — *real Sub-Pixel CNN ×3 inference via a custom JNI bridge over the ncnn C-API (`NcnnSuperResolutionEngine`, `ncnn-sr`); the vendored `libncnn_jni.so` (ncnn core statically linked + this project's JNI shim) is built from source with the Android NDK and loaded via `System.loadLibrary`, and the model is converted from `super-resolution-10.onnx` with the source-built `onnx2ncnn`; shares the ONNX SR pixel pipeline so the two stay directly comparable; iOS and Desktop stay out of scope (JNI native, no JVM artifact)* |
+| **NCNN** | ✅ | 📅 | 📅 | Vulkan, Metal | Android Super-Resolution + Classification ready — *real Sub-Pixel CNN ×3 inference (`NcnnSuperResolutionEngine`, `ncnn-sr`) and real MobileNetV2 classification (`NcnnClassificationEngine`, `ncnn-cls`), both via a custom JNI bridge over the ncnn C-API; the vendored `libncnn_jni.so` (ncnn core statically linked + this project's JNI shim) is built from source with the Android NDK and loaded via `System.loadLibrary`, and the models are converted from their `.onnx` sources with the source-built `onnx2ncnn`; SR shares the ONNX SR pixel pipeline and CLS mirrors the ONNX CLS pipeline so the pairs stay directly comparable; iOS and Desktop stay out of scope (JNI native, no JVM artifact); Object Detection (`ncnn-od`) is built but not yet shipped — ncnn's `onnx2ncnn` mis-converts YOLOv8's DFL head (all-NaN output), so the correct conversion path (PNNX: PyTorch→ncnn) is still pending* |
 | **MNN** | 📅 | 📅 | 📅 | OpenCL, Vulkan, Metal | Planned |
 | **ONNX Runtime GenAI** | 📅 | ✅ | 📅 | CPU | On-device LLM (Gemma/Phi) — **real on Android** (vendored `onnxruntime-genai-android` AAR, loaded from a user-supplied model *folder*); Desktop stays **mock** (ORT GenAI has no published JVM dependency) |
 
@@ -21,7 +21,7 @@ The ML landscape is fragmented. Developers often struggle to decide which engine
 While the project started with **Super-Resolution**, it is designed to be modular:
 
 - [x] **Super-Resolution:** ESPCN, FSRCNN, Real-ESRGAN — *working harness with a mock engine plus two real Desktop/JVM engines for side-by-side comparison: **ONNX Runtime** (Sub-Pixel CNN ×3, `super-resolution-10.onnx`) offered twice — once on the default CPU execution provider and once on the **CoreML** execution provider (Apple Neural Engine / GPU, on macOS) — so the UI can compare engine/latency trade-offs on the same model. The ×3 model output is rescaled to the selected task resolution so both providers stay directly comparable. On Android a third real backend is available — **NCNN** (`ncnn-sr`), the same Sub-Pixel CNN ×3 model converted to ncnn format (`super-resolution-10.param` + `.bin`) and run through a custom JNI bridge over the ncnn C-API; it reuses the identical YCbCr/luma pixel pipeline as the ONNX engine so the two stay directly comparable on-device*.
-- [x] **Image Classification:** MobileNetV2 — *working harness with a mock engine plus real engines: **ONNX Runtime** (MobileNetV2-12, `mobilenetv2-12.onnx`) runs actual inference on a **real bundled photo** (`classification_sample.jpg` — Grace Hopper, ImageNet class `military uniform`), softmaxes the 1000-class logits into a top-5 + confidence, and scores **standard ImageNet top-5 accuracy** (is the ground-truth label present in the predicted top-5?) — offered alongside the `MockClassificationEngine` so the UI can compare real vs mock quality. On Android a second real backend is available: **TensorFlow Lite** (LiteRT, float32 MobileNetV2, `mobilenetv2-224.tflite`) runs the same task via the `com.google.ai.edge.litert:litert` `Interpreter` with the XNNPACK delegate, offered on CPU (`tflite-cls`). The `.tflite` is converted from the same `mobilenetv2-12.onnx` (NHWC, ImageNet mean/std preprocessing) so both engines classify identically and agree on `military uniform` for the sample photo — letting the UI compare ONNX vs LiteRT on-device*.
+- [x] **Image Classification:** MobileNetV2 — *working harness with a mock engine plus real engines: **ONNX Runtime** (MobileNetV2-12, `mobilenetv2-12.onnx`) runs actual inference on a **real bundled photo** (`classification_sample.jpg` — Grace Hopper, ImageNet class `military uniform`), softmaxes the 1000-class logits into a top-5 + confidence, and scores **standard ImageNet top-5 accuracy** (is the ground-truth label present in the predicted top-5?) — offered alongside the `MockClassificationEngine` so the UI can compare real vs mock quality. On Android two more real backends are available: **TensorFlow Lite** (LiteRT, float32 MobileNetV2, `mobilenetv2-224.tflite`) runs the same task via the `com.google.ai.edge.litert:litert` `Interpreter` with the XNNPACK delegate, offered on CPU (`tflite-cls`); and **NCNN** (MobileNetV2-12 converted to ncnn format, `mobilenetv2-12.param` + `.bin`, run through the `NcnnNet` JNI bridge as `ncnn-cls`). The `.tflite` is converted from the same `mobilenetv2-12.onnx` (NHWC, ImageNet mean/std preprocessing) and the `.param/.bin` via `onnx2ncnn`, so all three engines classify identically and agree on `military uniform` for the sample photo — letting the UI compare ONNX vs LiteRT vs NCNN on-device*.
 - [x] **Object Detection:** YOLOv8-Nano — *working harness with a mock engine plus a real **ONNX Runtime** engine: on Desktop/JVM (YOLOv8n, `yolov8n.onnx`) it runs actual inference on a **real bundled photo** (`classification_sample.jpg`), decodes the `[1, 84, 8400]` output (sigmoid + argmax + NMS), and scores **mAP@0.5** vs the real ground-truth `person` box — offered alongside the `MockObjectDetectionEngine` so the UI can compare real vs mock quality. The same engines run on Android via `onnxruntime-android` (CPU and NNAPI).*
 - [x] **On-device LLM:** Gemma 2B / Phi-2 (via ONNX Runtime GenAI) — *working harness with a real engine on Android: `OnnxLlmEngine` loads a Gemma/Phi ORT GenAI model *folder* (supplied out-of-band, like the classification `.tflite`), tokenizes the prompt, decodes token-by-token, and reports genuine **tokens/sec** and **first-token latency** measured from the wall clock. The Desktop target keeps `MockLlmEngine` (ORT GenAI has no published JVM dependency), so the UI/metrics pipeline is exercised identically on both.*
 
@@ -42,7 +42,8 @@ The Desktop/JVM engines load pre-trained ONNX models bundled as classpath resour
 | `super-resolution-10.onnx` | `onnx-sr` / `onnx-coreml-sr` / `onnx-sr-nnapi` | Super-Resolution (Sub-Pixel CNN ×3) | ~234 KB |
 | `super-resolution-10.param` + `super-resolution-10.bin` | `ncnn-sr` | Super-Resolution (Sub-Pixel CNN ×3, ncnn format converted from the `.onnx` via `onnx2ncnn`) | ~738 B + ~233 KB |
 | `mobilenetv2-12.onnx` | `onnx-cls` / `onnx-cls-coreml` / `onnx-cls-nnapi` | Image Classification (MobileNetV2-12, 1000 ImageNet classes) | ~13.3 MB |
-| `imagenet_classes.txt` | `onnx-cls` / `tflite-cls` | ImageNet label map (1000 lines) | ~10 KB |
+| `mobilenetv2-12.param` + `mobilenetv2-12.bin` | `ncnn-cls` | Image Classification (MobileNetV2-12, ncnn format converted from the `.onnx` via `onnx2ncnn`; dynamic Shape subgraph patched out so the output is a flat 1000-logit vector) | ~11 KB + ~13.3 MB |
+| `imagenet_classes.txt` | `onnx-cls` / `tflite-cls` / `ncnn-cls` | ImageNet label map (1000 lines) | ~10 KB |
 | `classification_sample.jpg` | `onnx-cls` / `tflite-cls` / `mock-cls` / `onnx-od` / `mock-od` | Classification input photo + Object-Detection input photo (Grace Hopper, PD) — ground-truth `military uniform` (CLS) / `person` box (OD) | ~60 KB |
 | `sr_sample.jpg` | `onnx-sr` / `mock-sr` | Super-Resolution input photo (real image, resized to the task output) | ~60 KB |
 | `yolov8n.onnx` | `onnx-od` / `onnx-od-coreml` / `onnx-od-nnapi` | Object Detection (YOLOv8-nano, 80 COCO classes) | ~12.3 MB |
@@ -89,11 +90,17 @@ because modern ncnn releases no longer ship a Java/Kotlin wrapper. The model is
 
 To rebuild the native libs from scratch:
 
-1. **Convert the model** (one-time; needs `onnx2ncnn`, built from ncnn source —
+1. **Convert the models** (one-time; needs `onnx2ncnn`, built from ncnn source —
    the tool is *not* in the published ncnn artifacts, so add
    `add_subdirectory(onnx)` to `tools/CMakeLists.txt`, then
-   `cmake --build . --target onnx2ncnn`, and run
-   `onnx2ncnn super-resolution-10.onnx super-resolution-10.param super-resolution-10.bin`).
+   `cmake --build . --target onnx2ncnn`). Run it per model:
+   - `onnx2ncnn super-resolution-10.onnx super-resolution-10.param super-resolution-10.bin`
+   - `onnx2ncnn mobilenetv2-12.onnx mobilenetv2-12.param mobilenetv2-12.bin`
+     (the stock `mobilenetv2-12` graph has a dynamic `Shape` subgraph that
+     `onnx2ncnn` cannot convert — patch it first by wiring `Reshape`'s shape
+     input to a constant `[1,1000]` and dropping the Shape/Gather/Unsqueeze/Concat
+     nodes; the output then becomes a flat 1000-logit vector, matching ONNX
+     Runtime to cosine 0.9986).
 2. **Build the ncnn core** as a static lib per ABI (NDK 27, `android-24`,
    Vulkan off, OpenMP on).
 3. **Compile the JNI bridge** into `shared/src/androidMain/jniLibs/<abi>/libncnn_jni.so`
@@ -102,6 +109,12 @@ To rebuild the native libs from scratch:
    `NcnnNet` loads it via `System.loadLibrary("ncnn_jni")`.
 
 The full NDK/cmake invocations are documented in `build_ncnn_jni.sh`.
+
+> **⚠️ YOLOv8 detection is not yet convertible via `onnx2ncnn`.** ncnn's ONNX
+> importer mis-converts YOLOv8's DFL head: the box-decoder path overflows to
+> ±1e30 (all-NaN output), while the backbone is fine. The correct path is
+> **PNNX** (export `yolov8n.pt` → ncnn via PyTorch), which is still pending, so
+> `ncnn-od` is built but not registered in `EngineCatalog`.
 
 ## ▶️ Running on Desktop
 The product currently targets Desktop (JVM). From the repository root:
