@@ -7,8 +7,10 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.ClassificationQualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.model.LlmQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -110,5 +112,59 @@ class BenchmarkResultMapperTest {
         assertEquals(0.42, q.confidence, 0.0)
         assertEquals(1.0, q.accuracy, 0.0)
         assertEquals(2, q.topK.size)
+    }
+
+    @Test
+    fun mapsLlmResultWithoutOutputImage() {
+        val result = BenchmarkResult(
+            engineId = "mock-llm",
+            engineName = "Mock LLM Engine",
+            task = LlmTask(prompt = "Hello"),
+            input = BenchmarkInput(1, 1, "Hello", ImageBuffer(1, 1, IntArray(1)), prompt = "Hello"),
+            output = BenchmarkOutput(
+                1,
+                1,
+                ImageBuffer(1, 1, IntArray(1)),
+                LlmQualityMetrics(
+                    generatedText = "Hello — Kotlin Multiplatform shares logic across platforms.",
+                    tokensPerSecond = 40.0,
+                    firstTokenLatencyMs = 60L,
+                    promptTokens = 2,
+                    completionTokens = 16,
+                ),
+            ),
+            metrics = BenchmarkMetrics(
+                initTimeMs = 1.0,
+                warmupMs = null,
+                iterations = 5,
+                avgLatencyMs = 460.0,
+                minLatencyMs = 450.0,
+                maxLatencyMs = 470.0,
+                p50LatencyMs = 460.0,
+                p95LatencyMs = 468.0,
+                throughputFps = 2.1,
+                peakMemoryMb = 10.0,
+            ),
+            quality = LlmQualityMetrics(
+                generatedText = "Hello — Kotlin Multiplatform shares logic across platforms.",
+                tokensPerSecond = 40.0,
+                firstTokenLatencyMs = 60L,
+                promptTokens = 2,
+                completionTokens = 16,
+            ),
+        )
+
+        val ui = result.toUi()
+
+        assertEquals("llm", ui.taskId)
+        // LLM has no pixel output, so the preview frame is suppressed.
+        assertNull(ui.outputImage)
+        assertTrue(ui.quality is LlmQualityUi)
+        val q = ui.quality as LlmQualityUi
+        assertEquals("Hello — Kotlin Multiplatform shares logic across platforms.", q.generatedText)
+        assertEquals(40.0, q.tokensPerSecond, 0.0)
+        assertEquals(60L, q.firstTokenLatencyMs)
+        assertEquals(2, q.promptTokens)
+        assertEquals(16, q.completionTokens)
     }
 }

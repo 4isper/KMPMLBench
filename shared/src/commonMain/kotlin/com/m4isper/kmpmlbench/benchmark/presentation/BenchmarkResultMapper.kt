@@ -3,9 +3,11 @@ package com.m4isper.kmpmlbench.benchmark.presentation
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
 import com.m4isper.kmpmlbench.benchmark.domain.model.ClassificationQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.DetectionQualityMetrics
+import com.m4isper.kmpmlbench.benchmark.domain.model.LlmQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.QualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 
 /** Maps a domain [BenchmarkResult] into the presentation model. */
 fun BenchmarkResult.toUi(): BenchmarkResultUi = BenchmarkResultUi(
@@ -15,7 +17,7 @@ fun BenchmarkResult.toUi(): BenchmarkResultUi = BenchmarkResultUi(
     outputWidth = output.width,
     outputHeight = output.height,
     inputImage = input.image,
-    outputImage = if (task is ClassificationTask) null else output.image,
+    outputImage = if (task is ClassificationTask || task is LlmTask) null else output.image,
     quality = quality.toUi(),
     initTimeMs = metrics.initTimeMs,
     avgLatencyMs = metrics.avgLatencyMs,
@@ -41,5 +43,12 @@ fun QualityMetrics.toUi(): QualityUi = when (this) {
         numDetections = numDetections,
         meanConfidence = meanConfidence,
         mAP = mAP,
+    )
+    is LlmQualityMetrics -> LlmQualityUi(
+        generatedText = generatedText,
+        tokensPerSecond = tokensPerSecond,
+        firstTokenLatencyMs = firstTokenLatencyMs,
+        promptTokens = promptTokens,
+        completionTokens = completionTokens,
     )
 }

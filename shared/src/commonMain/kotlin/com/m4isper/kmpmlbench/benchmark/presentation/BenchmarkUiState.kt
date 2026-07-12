@@ -25,6 +25,14 @@ data class DetectionQualityUi(
     val mAP: Double,
 ) : QualityUi
 
+data class LlmQualityUi(
+    val generatedText: String,
+    val tokensPerSecond: Double,
+    val firstTokenLatencyMs: Long?,
+    val promptTokens: Int,
+    val completionTokens: Int,
+) : QualityUi
+
 data class BenchmarkResultUi(
     val engineName: String,
     val taskName: String,
@@ -51,6 +59,8 @@ data class BenchmarkUiState(
     val scale: Int = 2,
     val inputSize: Int = 128,
     val iterations: Int = 50,
+    val prompt: String = "What is Kotlin Multiplatform?",
+    val maxNewTokens: Int = 48,
     val engines: List<EngineItem> = emptyList(),
     val selectedEngineId: String? = null,
     val isRunning: Boolean = false,

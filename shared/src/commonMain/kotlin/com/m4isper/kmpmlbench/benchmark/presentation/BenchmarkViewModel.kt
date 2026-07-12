@@ -3,6 +3,7 @@ package com.m4isper.kmpmlbench.benchmark.presentation
 import com.m4isper.kmpmlbench.benchmark.domain.engine.EngineProvider
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
@@ -52,6 +53,14 @@ class BenchmarkViewModel(
 
     fun onIterationsChanged(iterations: Int) {
         _state.update { it.copy(iterations = iterations.coerceAtLeast(1)) }
+    }
+
+    fun onPromptChanged(prompt: String) {
+        _state.update { it.copy(prompt = prompt) }
+    }
+
+    fun onMaxNewTokensSelected(maxNewTokens: Int) {
+        _state.update { it.copy(maxNewTokens = maxNewTokens) }
     }
 
     fun onEngineSelected(engineId: String) {
@@ -134,6 +143,10 @@ class BenchmarkViewModel(
     private fun buildTask(state: BenchmarkUiState): BenchmarkTask = when (state.selectedTaskId) {
         ClassificationTask().id -> ClassificationTask()
         ObjectDetectionTask().id -> ObjectDetectionTask()
+        LlmTask().id -> LlmTask(
+            prompt = state.prompt.ifBlank { LlmTask().prompt },
+            maxNewTokens = state.maxNewTokens,
+        )
         else -> SuperResolutionTask(state.scale, state.inputSize, state.inputSize)
     }
 

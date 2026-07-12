@@ -21,6 +21,7 @@ import com.m4isper.kmpmlbench.benchmark.data.engine.EngineCatalog
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.processing.downsample
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkRunner
 import com.m4isper.kmpmlbench.benchmark.presentation.ClassificationQualityUi
@@ -65,13 +66,14 @@ fun BenchmarkScreen() {
                 ) {
                     Text("Task", style = MaterialTheme.typography.titleMedium)
                     SegmentedChoice(
-                        options = listOf("super-resolution", ClassificationTask().id, ObjectDetectionTask().id),
+                        options = listOf("super-resolution", ClassificationTask().id, ObjectDetectionTask().id, LlmTask().id),
                         selected = uiState.selectedTaskId,
                         onSelect = viewModel::onTaskSelected,
                         label = {
                             when (it) {
                                 ClassificationTask().id -> "Classification"
                                 ObjectDetectionTask().id -> "Object Detection"
+                                LlmTask().id -> "On-device LLM"
                                 else -> "Super-Resolution"
                             }
                         },
@@ -104,6 +106,28 @@ fun BenchmarkScreen() {
                                 "Mock + ONNX engines · 640×640 input · 80 COCO classes",
                                 style = MaterialTheme.typography.bodySmall,
                             )
+                        }
+                        LlmTask().id -> {
+                            Text(
+                                "Mock engine · simulates Gemma-2B / Phi-2 decode (ExecuTorch pending)",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            OutlinedTextField(
+                                value = uiState.prompt,
+                                onValueChange = viewModel::onPromptChanged,
+                                label = { Text("Prompt") },
+                                minLines = 2,
+                                maxLines = 4,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            LabeledRow("Max new tokens") {
+                                SegmentedChoice(
+                                    options = listOf(16, 32, 48, 96),
+                                    selected = uiState.maxNewTokens,
+                                    onSelect = viewModel::onMaxNewTokensSelected,
+                                    label = { "$it" },
+                                )
+                            }
                         }
                         else -> {
                             LabeledRow("Upscale factor") {
@@ -178,12 +202,15 @@ fun BenchmarkScreen() {
 
             uiState.result?.let { result ->
                 ResultCard(result)
-                PreviewCard(
-                    inputImage = result.inputImage,
-                    outputImage = result.outputImage,
-                    outputWidth = result.outputWidth,
-                    outputHeight = result.outputHeight,
-                )
+                // LLM has no pixel output; hide the reconstructed-frame preview.
+                if (result.taskId != LlmTask().id) {
+                    PreviewCard(
+                        inputImage = result.inputImage,
+                        outputImage = result.outputImage,
+                        outputWidth = result.outputWidth,
+                        outputHeight = result.outputHeight,
+                    )
+                }
             }
 
             uiState.comparison?.let { comparison ->
@@ -281,6 +308,17 @@ private fun ResultCard(result: BenchmarkResultUi) {
                     MetricRow("Mean confidence", q.meanConfidence.format(4))
                     MetricRow("mAP@0.5", q.mAP.format(4))
                 }
+                is LlmQualityUi -> {
+                    MetricRow("Tokens / sec", "${q.tokensPerSecond.format(1)} tok/s")
+                    MetricRow("First token", "${q.firstTokenLatencyMs?.toDouble()?.format(0) ?: "n/a"} ms")
+                    MetricRow("Prompt tokens", "${q.promptTokens}")
+                    MetricRow("Completion tokens", "${q.completionTokens}")
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        q.generatedText,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
         }
     }
@@ -367,6 +405,10 @@ private fun ComparisonCard(results: List<BenchmarkResultUi>) {
                 is DetectionQualityUi -> {
                     BarChart("mAP@0.5 (higher is better)", results.map { it.engineName to (it.quality as DetectionQualityUi).mAP }) { it.format(4) }
                     BarChart("Detections", results.map { it.engineName to (it.quality as DetectionQualityUi).numDetections.toDouble() }) { it.format(0) }
+                }
+                is LlmQualityUi -> {
+                    BarChart("Tokens / sec (higher is better)", results.map { it.engineName to (it.quality as LlmQualityUi).tokensPerSecond }) { it.format(1) }
+                    BarChart("First-token latency (ms, lower is better)", results.map { it.engineName to ((it.quality as LlmQualityUi).firstTokenLatencyMs?.toDouble() ?: 0.0) }) { it.format(0) }
                 }
             }
         }

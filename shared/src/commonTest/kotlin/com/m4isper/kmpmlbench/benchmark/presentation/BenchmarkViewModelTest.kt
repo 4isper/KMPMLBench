@@ -10,6 +10,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.model.SrQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -169,6 +170,18 @@ class BenchmarkViewModelTest {
         val vm = BenchmarkViewModel(FakeUseCase(), FakeProvider(FakeEngine()))
         vm.onTaskSelected(ClassificationTask().id)
         assertEquals(null, vm.state.value.comparison)
+        vm.clear()
+    }
+
+    @Test
+    fun llmTaskUpdatesPromptAndMaxNewTokensState() {
+        val vm = BenchmarkViewModel(FakeUseCase(), FakeProvider(FakeEngine()))
+        vm.onTaskSelected(LlmTask().id)
+        assertEquals(LlmTask().id, vm.state.value.selectedTaskId)
+        vm.onPromptChanged("Translate to French")
+        assertEquals("Translate to French", vm.state.value.prompt)
+        vm.onMaxNewTokensSelected(96)
+        assertEquals(96, vm.state.value.maxNewTokens)
         vm.clear()
     }
 }

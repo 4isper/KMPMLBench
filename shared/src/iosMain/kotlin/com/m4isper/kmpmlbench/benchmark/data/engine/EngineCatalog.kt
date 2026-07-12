@@ -3,6 +3,7 @@ package com.m4isper.kmpmlbench.benchmark.data.engine
 import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 
@@ -14,5 +15,6 @@ actual fun platformEnginesFor(task: BenchmarkTask): List<MlEngine> = when (task)
     is SuperResolutionTask -> listOf(MockSuperResolutionEngine(task))
     is ClassificationTask -> listOf(MockClassificationEngine(task))
     is ObjectDetectionTask -> listOf(MockObjectDetectionEngine(task))
+    is LlmTask -> listOf(MockLlmEngine(task))
     else -> emptyList()
 }

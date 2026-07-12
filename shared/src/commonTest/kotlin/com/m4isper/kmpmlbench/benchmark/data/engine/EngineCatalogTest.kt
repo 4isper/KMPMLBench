@@ -4,6 +4,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import kotlin.test.Test
@@ -29,6 +30,12 @@ class EngineCatalogTest {
     fun objectDetectionRegistersMockEngine() {
         val engines = EngineCatalog.enginesFor(ObjectDetectionTask())
         assertTrue(engines.any { it.id == "mock-od" }, "mock detection engine must be registered")
+    }
+
+    @Test
+    fun llmRegistersMockEngine() {
+        val engines = EngineCatalog.enginesFor(LlmTask())
+        assertTrue(engines.any { it.id == "mock-llm" }, "mock llm engine must be registered")
     }
 
     @Test

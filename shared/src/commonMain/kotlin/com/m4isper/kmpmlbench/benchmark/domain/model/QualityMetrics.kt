@@ -30,3 +30,14 @@ data class DetectionQualityMetrics(
     /** Mean Average Precision at IoU 0.5 vs the task's ground-truth boxes, in [0, 1]. */
     val mAP: Double,
 ) : QualityMetrics
+
+/** On-device LLM quality: generated text plus decode throughput and token counts. */
+data class LlmQualityMetrics(
+    val generatedText: String,
+    /** Decoded tokens per second (placeholder for the mock, real for ExecuTorch). */
+    val tokensPerSecond: Double,
+    /** Time to emit the first token after the prompt is consumed, in ms (null if n/a). */
+    val firstTokenLatencyMs: Long? = null,
+    val promptTokens: Int = 0,
+    val completionTokens: Int = 0,
+) : QualityMetrics
