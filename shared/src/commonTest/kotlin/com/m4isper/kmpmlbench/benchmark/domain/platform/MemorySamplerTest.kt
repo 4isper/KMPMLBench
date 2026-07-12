@@ -1,4 +1,4 @@
-package com.m4isper.kmpmlbench.benchmark.data.platform
+package com.m4isper.kmpmlbench.benchmark.domain.platform
 
 import kotlin.test.Test
 import kotlin.test.assertTrue

@@ -16,8 +16,8 @@ import com.m4isper.kmpmlbench.benchmark.domain.processing.iou
 import com.m4isper.kmpmlbench.benchmark.domain.processing.resizeBilinear
 import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.data.engine.configureProvider
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelBytes
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelFile
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadModelBytes
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadModelFile
 import java.nio.FloatBuffer
 import kotlin.math.exp
 

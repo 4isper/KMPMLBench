@@ -1,4 +1,4 @@
-package com.m4isper.kmpmlbench.benchmark.data.platform
+package com.m4isper.kmpmlbench.benchmark.domain.platform
 
 /**
  * Current process memory usage in megabytes. Best-effort and platform-specific:

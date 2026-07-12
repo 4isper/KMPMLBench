@@ -1,4 +1,4 @@
-package com.m4isper.kmpmlbench.benchmark.data.platform
+package com.m4isper.kmpmlbench.benchmark.domain.platform
 
 /**
  * Opens a native file picker restricted to images and returns the selected

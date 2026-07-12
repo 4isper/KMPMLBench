@@ -6,7 +6,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkResult
 import com.m4isper.kmpmlbench.benchmark.domain.task.BenchmarkTask
-import com.m4isper.kmpmlbench.benchmark.data.platform.currentMemoryUsageMb
+import com.m4isper.kmpmlbench.benchmark.domain.platform.currentMemoryUsageMb
 import kotlin.math.max
 import kotlin.time.TimeSource
 import kotlinx.coroutines.Dispatchers

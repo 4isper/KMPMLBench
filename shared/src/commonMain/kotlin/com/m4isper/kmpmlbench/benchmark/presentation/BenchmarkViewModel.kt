@@ -8,11 +8,11 @@ import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadImageFile
-import com.m4isper.kmpmlbench.benchmark.data.platform.pickDirectory
-import com.m4isper.kmpmlbench.benchmark.data.platform.pickFile
-import com.m4isper.kmpmlbench.benchmark.data.platform.pickImage
-import com.m4isper.kmpmlbench.benchmark.data.platform.realLlmEngineSupported
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadImageFile
+import com.m4isper.kmpmlbench.benchmark.domain.platform.pickDirectory
+import com.m4isper.kmpmlbench.benchmark.domain.platform.pickFile
+import com.m4isper.kmpmlbench.benchmark.domain.platform.pickImage
+import com.m4isper.kmpmlbench.benchmark.domain.platform.realLlmEngineSupported
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers

@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalForeignApi::class)
 
-package com.m4isper.kmpmlbench.benchmark.data.platform
+package com.m4isper.kmpmlbench.benchmark.domain.platform
 
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.processing.generateSyntheticImage

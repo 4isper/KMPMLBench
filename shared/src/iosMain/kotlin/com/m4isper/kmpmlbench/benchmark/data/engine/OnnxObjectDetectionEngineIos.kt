@@ -20,8 +20,8 @@ import com.m4isper.kmpmlbench.benchmark.domain.processing.evaluateDetections
 import com.m4isper.kmpmlbench.benchmark.domain.processing.iou
 import com.m4isper.kmpmlbench.benchmark.domain.processing.resizeBilinear
 import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelBytes
-import com.m4isper.kmpmlbench.benchmark.data.platform.resolveResourcePath
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadModelBytes
+import com.m4isper.kmpmlbench.benchmark.domain.platform.resolveResourcePath
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCObjectVar

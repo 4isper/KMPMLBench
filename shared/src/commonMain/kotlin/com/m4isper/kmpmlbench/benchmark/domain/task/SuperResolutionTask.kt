@@ -1,6 +1,6 @@
 package com.m4isper.kmpmlbench.benchmark.domain.task
 
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadImageBuffer
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.processing.downsample

@@ -19,7 +19,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.m4isper.kmpmlbench.Greeting
 import com.m4isper.kmpmlbench.benchmark.data.engine.EngineCatalog
-import com.m4isper.kmpmlbench.benchmark.data.platform.realLlmEngineSupported
+import com.m4isper.kmpmlbench.benchmark.domain.platform.realLlmEngineSupported
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.processing.downsample
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask

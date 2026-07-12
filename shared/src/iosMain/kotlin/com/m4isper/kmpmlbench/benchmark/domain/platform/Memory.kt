@@ -1,4 +1,4 @@
-package com.m4isper.kmpmlbench.benchmark.data.platform
+package com.m4isper.kmpmlbench.benchmark.domain.platform
 
 /**
  * iOS/Native: a portable memory counter is not wired up, so this reports 0.0.

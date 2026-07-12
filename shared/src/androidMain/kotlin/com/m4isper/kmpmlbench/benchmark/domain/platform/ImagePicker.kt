@@ -1,4 +1,4 @@
-package com.m4isper.kmpmlbench.benchmark.data.platform
+package com.m4isper.kmpmlbench.benchmark.domain.platform
 
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts

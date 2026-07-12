@@ -7,8 +7,8 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.Box
 import com.m4isper.kmpmlbench.benchmark.domain.model.Detection
 import com.m4isper.kmpmlbench.benchmark.domain.model.DetectionQualityMetrics
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelBytes
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelFile
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadModelBytes
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadModelFile
 import com.m4isper.kmpmlbench.benchmark.domain.processing.drawBoxes
 import com.m4isper.kmpmlbench.benchmark.domain.processing.evaluateDetections
 import com.m4isper.kmpmlbench.benchmark.domain.processing.iou

@@ -5,7 +5,7 @@ import com.m4isper.kmpmlbench.benchmark.domain.model.Box
 import com.m4isper.kmpmlbench.benchmark.domain.model.Detection
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.processing.generateSyntheticImage
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadImageBuffer
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadImageBuffer
 
 /**
  * Object Detection: locate and classify objects inside a fixed-size input image.

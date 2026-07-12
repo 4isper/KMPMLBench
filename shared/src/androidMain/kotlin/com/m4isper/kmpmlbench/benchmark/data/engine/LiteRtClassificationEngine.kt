@@ -1,6 +1,6 @@
 package com.m4isper.kmpmlbench.benchmark.data.engine
 
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelBytes
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadModelBytes
 import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput

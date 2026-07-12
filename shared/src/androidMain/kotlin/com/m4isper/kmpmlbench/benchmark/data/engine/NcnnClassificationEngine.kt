@@ -4,8 +4,8 @@ import com.m4isper.kmpmlbench.benchmark.domain.engine.MlEngine
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkInput
 import com.m4isper.kmpmlbench.benchmark.domain.model.BenchmarkOutput
 import com.m4isper.kmpmlbench.benchmark.domain.model.ClassificationQualityMetrics
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelBytes
-import com.m4isper.kmpmlbench.benchmark.data.platform.loadModelFile
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadModelBytes
+import com.m4isper.kmpmlbench.benchmark.domain.platform.loadModelFile
 import com.m4isper.kmpmlbench.benchmark.domain.processing.resizeBilinear
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
 import kotlin.math.exp
