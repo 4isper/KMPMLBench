@@ -22,8 +22,8 @@ import java.nio.FloatBuffer
  * upscales the luma (Y) channel by a fixed factor of 3. The benchmark's ARGB
  * input is split into YCbCr; only Y is fed to the model, the chroma channels are
  * upscaled separately with bilinear interpolation, and the three are recombined
- * into the reconstructed RGB frame. Quality is scored against a synthetic
- * ground truth at the model's output resolution.
+ * into the reconstructed RGB frame. Quality is scored against a real bundled
+ * photo (the same frame the low-res input was downsampled from).
  *
  * The engine can optionally run on the CoreML execution provider (Apple
  * Neural Engine / GPU) instead of the default CPU provider, so the benchmark UI
