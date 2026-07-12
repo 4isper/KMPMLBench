@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
@@ -26,8 +27,20 @@ kotlin {
         iosSimulatorArm64()
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
-            baseName = "Shared"
+            baseName = "shared"
             isStatic = true
+        }
+    }
+
+    cocoapods {
+        version = "1.0.0"
+        summary = "KMPMLBench shared benchmark module"
+        homepage = "https://github.com/4isper/KMPMLBench"
+        ios.deploymentTarget = "15.1"
+        // Real ONNX Runtime (Objective-C API) for on-device inference on iOS.
+        // Pulls the full build (onnxruntime-c), so it loads .onnx models directly.
+        pod("onnxruntime-objc") {
+            version = "1.26.0"
         }
     }
 
