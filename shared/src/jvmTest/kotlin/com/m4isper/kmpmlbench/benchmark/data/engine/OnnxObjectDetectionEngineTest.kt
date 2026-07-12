@@ -21,12 +21,15 @@ class OnnxObjectDetectionEngineTest {
         val output = engine.infer(input)
         engine.close()
 
-        assertEquals(input.width, output.width)
-        assertEquals(input.height, output.height)
+        // The engine returns the model-input-sized (640×640) frame with boxes drawn.
+        assertEquals(640, output.width)
+        assertEquals(640, output.height)
 
         val q = output.quality as DetectionQualityMetrics
-        assertTrue(q.numDetections >= 0, "detections non-negative")
-        assertTrue(q.meanConfidence in 0.0..1.0, "confidence in [0,1]")
-        assertTrue(q.mAP in 0.0..1.0, "mAP in [0,1]")
+        // The real engine must surface exactly the single correct `person`
+        // detection on the bundled sample and score ~1.0 mAP against the GT box.
+        assertEquals(1, q.numDetections)
+        assertTrue(q.meanConfidence in 0.6..0.8, "expected the person detection at ~0.71, got ${q.meanConfidence}")
+        assertTrue(q.mAP > 0.9, "real person detection should score ~1.0 mAP, got ${q.mAP}")
     }
 }

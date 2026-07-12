@@ -29,8 +29,14 @@ import kotlin.math.exp
  * normalization), fed to the model, and the [1, 84, 8400] output is decoded —
  * per-anchor class scores are sigmoided, the best class is taken, boxes below
  * the confidence threshold are dropped, and greedy NMS removes duplicates. The
- * surviving detections are scored with mAP@0.5 against the task's synthetic
- * ground-truth boxes and drawn onto the output frame.
+ * surviving detections are scored with mAP@0.5 against the task's ground-truth
+ * boxes (a real `person` box on the bundled sample) and drawn onto the output
+ * frame.
+ *
+ * The default confidence threshold is 0.7: the bundled `yolov8n.onnx` is a noisy
+ * export that emits many low-confidence spurious boxes, so a higher threshold is
+ * needed to surface its single correct `person` detection. A cleaner model would
+ * run at the usual ~0.25–0.5.
  *
  * The engine can optionally run on the CoreML execution provider (Apple
  * Neural Engine / GPU) instead of the default CPU provider, so the benchmark UI
@@ -41,7 +47,7 @@ class OnnxObjectDetectionEngine(
     private val modelResourcePath: String = "models/yolov8n.onnx",
     private val labelsResourcePath: String = "models/coco_classes.txt",
     private val modelInputSize: Int = 640,
-    private val confidenceThreshold: Float = 0.25f,
+    private val confidenceThreshold: Float = 0.7f,
     private val nmsThreshold: Float = 0.45f,
     private val executionProvider: String = "cpu",
 ) : MlEngine {
