@@ -1,10 +1,12 @@
 package com.m4isper.kmpmlbench.benchmark.data.engine
 
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
+import com.m4isper.kmpmlbench.benchmark.domain.task.LlmTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -61,5 +63,21 @@ class EngineCatalogCustomModelTest {
             assertEquals(null, it.customModelPath)
             assertEquals(null, it.customLabelsPath)
         }
+    }
+
+    @Test
+    fun llmStaysMockOnJvmEvenWithCustomModel() {
+        // ORT GenAI has no published JVM dependency, so the real LLM engine is
+        // Android-only. On the Desktop/JVM target the catalog must keep the mock
+        // regardless of whether a custom model folder path is supplied.
+        val withCustom = EngineCatalog.enginesFor(
+            LlmTask(),
+            customModelPath = "/models/gemma-ort",
+        )
+        assertTrue(withCustom.all { it is MockLlmEngine }, "JVM LLM must remain mock-only")
+        assertEquals(1, withCustom.size)
+
+        val withoutCustom = EngineCatalog.enginesFor(LlmTask())
+        assertTrue(withoutCustom.all { it is MockLlmEngine })
     }
 }

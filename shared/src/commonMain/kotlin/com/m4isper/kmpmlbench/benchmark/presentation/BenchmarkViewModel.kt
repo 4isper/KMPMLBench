@@ -9,8 +9,10 @@ import com.m4isper.kmpmlbench.benchmark.domain.task.ObjectDetectionTask
 import com.m4isper.kmpmlbench.benchmark.domain.task.SuperResolutionTask
 import com.m4isper.kmpmlbench.benchmark.domain.usecase.BenchmarkUseCase
 import com.m4isper.kmpmlbench.benchmark.data.platform.loadImageFile
+import com.m4isper.kmpmlbench.benchmark.data.platform.pickDirectory
 import com.m4isper.kmpmlbench.benchmark.data.platform.pickFile
 import com.m4isper.kmpmlbench.benchmark.data.platform.pickImage
+import com.m4isper.kmpmlbench.benchmark.data.platform.realLlmEngineSupported
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
@@ -98,12 +100,20 @@ class BenchmarkViewModel(
     /**
      * Opens the platform file picker for `.onnx` and stores the chosen model
      * path. The next [runBenchmark] run passes it to the ONNX engines so they
-     * load the user's model instead of the bundled one.
+     * load the user's model instead of the bundled one. For the LLM task it
+     * opens a *folder* picker instead, since ORT GenAI loads a model directory.
      */
     fun onPickModel() {
         val current = _state.value
         if (current.isRunning) return
-        if (current.selectedTaskId == LlmTask().id) return
+        if (current.selectedTaskId == LlmTask().id) {
+            if (!realLlmEngineSupported) return
+            scope.launch {
+                val path = pickDirectory() ?: return@launch
+                _state.update { it.copy(customModelPath = path) }
+            }
+            return
+        }
 
         scope.launch {
             val path = pickFile(listOf("onnx")) ?: return@launch

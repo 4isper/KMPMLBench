@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.m4isper.kmpmlbench.Greeting
 import com.m4isper.kmpmlbench.benchmark.data.engine.EngineCatalog
+import com.m4isper.kmpmlbench.benchmark.data.platform.realLlmEngineSupported
 import com.m4isper.kmpmlbench.benchmark.domain.model.ImageBuffer
 import com.m4isper.kmpmlbench.benchmark.domain.processing.downsample
 import com.m4isper.kmpmlbench.benchmark.domain.task.ClassificationTask
@@ -109,8 +110,16 @@ fun BenchmarkScreen() {
                             )
                         }
                         LlmTask().id -> {
+                            val llmStatus = when {
+                                !realLlmEngineSupported ->
+                                    "Mock engine · real LLM runs on Android via ONNX Runtime GenAI"
+                                uiState.customModelPath != null ->
+                                    "ONNX Runtime GenAI · real Gemma/Phi-2 from your model folder"
+                                else ->
+                                    "Mock engine · load a model folder below to enable the real engine"
+                            }
                             Text(
-                                "Mock engine · simulates Gemma-2B / Phi-2 decode (ExecuTorch pending)",
+                                llmStatus,
                                 style = MaterialTheme.typography.bodySmall,
                             )
                             OutlinedTextField(
@@ -176,7 +185,7 @@ fun BenchmarkScreen() {
                         )
                     }
 
-                    if (uiState.selectedTaskId != LlmTask().id) {
+                    if (uiState.selectedTaskId != LlmTask().id || realLlmEngineSupported) {
                         Spacer(Modifier.height(12.dp))
                         HorizontalDivider()
                         Spacer(Modifier.height(12.dp))
@@ -187,8 +196,13 @@ fun BenchmarkScreen() {
                                 enabled = !uiState.isRunning,
                             ) {
                                 Text(
-                                    if (uiState.customModelPath == null) "Load model (.onnx)…"
-                                    else "Replace model…",
+                                    when {
+                                        uiState.selectedTaskId == LlmTask().id ->
+                                            if (uiState.customModelPath == null) "Load model folder (.onnx)…"
+                                            else "Replace folder…"
+                                        uiState.customModelPath == null -> "Load model (.onnx)…"
+                                        else -> "Replace model…"
+                                    },
                                 )
                             }
                             if (uiState.customModelPath != null) {
@@ -205,8 +219,13 @@ fun BenchmarkScreen() {
                             )
                         }
                         if (uiState.customModelPath != null) {
+                            val note = if (uiState.selectedTaskId == LlmTask().id) {
+                                "Своя модель LLM: текст генерируется реальным движком ONNX Runtime GenAI (Gemma/Phi)"
+                            } else {
+                                "Своя модель: метрики качества могут не соответствовать классам/размеру входа модели"
+                            }
                             Text(
-                                "Своя модель: метрики качества могут не соответствовать классам/размеру входа модели",
+                                note,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
